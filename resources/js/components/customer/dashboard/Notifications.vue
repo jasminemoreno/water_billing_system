@@ -5,7 +5,7 @@
       <div v-if="currentBill" class="notification-item yellow">
         <p class="title">New Bill Available</p>
         <p class="desc">
-          Your bill for this month is ready.<br>
+          Your bill for the month of ----  is ready.<br>
           Due Date: {{ formatDate(currentBill.due_date) }}<br>
           Disconnection Date: {{ formatDate(currentBill.disconnection_date) }}
         </p>

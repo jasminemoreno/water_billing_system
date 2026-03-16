@@ -89,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('auth:customer-api')->prefix('customer')->group(function () {
     Route::get('/dashboard', [CustomerHomeController::class, 'dashboard']);
+    Route::get('/dashboardData', [CustomerHomeController::class, 'dashboardData']);
     Route::get('/bills', [CustomerBillController::class, 'index']);
     Route::post('/logout', [CustomerAuthController::class, 'logout']);
 

@@ -40,31 +40,45 @@ class CustomerHomeController extends Controller
 }
     // JSON endpoint for AJAX updates
     public function dashboardData()
-    {
-        $customer = auth('customer')->user();
+{
+    $customer = auth('customer-api')->user();
 
-        $currentBill = Bill::where('customer_id', $customer->id)->latest()->first();
-        $lastPayment = Payment::where('customer_id', $customer->id)->latest()->first();
-
-        // Chart data
-        $bills = Bill::where('customer_id', $customer->id)->get();
-        $monthlyData = collect();
-        for ($i = 1; $i <= 12; $i++) $monthlyData[$i] = 0;
-        foreach ($bills as $bill) {
-            $month = (int) $bill->created_at->format('m');
-            $monthlyData[$month] += $bill->consumption;
-        }
-
-        $chartLabels = collect(range(1,12))->map(fn($m) => date('M', mktime(0,0,0,$m,1)));
-        $chartData   = $monthlyData->values();
-        $chartColors = $chartData->map(fn($val) => $val > 0 ? 'rgba(54, 162, 235, 0.6)' : 'rgba(200,200,200,0.3)');
-
-        return response()->json([
-            'currentBill' => $currentBill,
-            'lastPayment' => $lastPayment,
-            'chartLabels' => $chartLabels,
-            'chartData' => $chartData,
-            'chartColors' => $chartColors,
-        ]);
+    if (!$customer) {
+        return response()->json(['message' => 'Unauthorized'], 401);
     }
+
+    $currentBill = Bill::where('customer_id', $customer->id)->latest()->first();
+    $lastPayment = Payment::where('customer_id', $customer->id)->latest()->first();
+
+    // Chart data: initialize 12 months
+    $monthlyData = [];
+    for ($i = 1; $i <= 12; $i++) {
+        $monthlyData[$i] = 0;
+    }
+
+    // Aggregate consumption per month
+    $bills = Bill::where('customer_id', $customer->id)->get();
+    foreach ($bills as $bill) {
+        $month = (int) $bill->created_at->format('m'); // 1-12
+        $monthlyData[$month] += (float) $bill->consumption; // cast to number
+    }
+
+    // Build labels and values for Chart.js
+    $chartLabels = [];
+    $chartData = [];
+    $chartColors = [];
+    foreach ($monthlyData as $monthNum => $consumption) {
+        $chartLabels[] = date('M', mktime(0,0,0,$monthNum,1)); // Jan, Feb...
+        $chartData[] = $consumption;
+        $chartColors[] = $consumption > 0 ? 'rgba(54,162,235,0.6)' : 'rgba(200,200,200,0.3)';
+    }
+
+    return response()->json([
+        'currentBill' => $currentBill,
+        'lastPayment' => $lastPayment,
+        'chartLabels' => $chartLabels,
+        'chartData' => $chartData,
+        'chartColors' => $chartColors
+    ]);
+}
 }
