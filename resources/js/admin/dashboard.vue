@@ -29,9 +29,9 @@
 import { reactive, onMounted } from "vue";
 import api from "@/api.js"; // Axios instance with auth headers
 
-import DashboardSummary from "@/components/admin/dashboard/DashboardSummary.vue";
-import RevenueChart from "@/components/admin/dashboard/RevenueChart.vue";
-import PaymentStatusChart from "@/components/admin/dashboard/PaymentStatusChart.vue";
+import DashboardSummary from "@/components/admin/DashboardSummary.vue";
+import RevenueChart from "@/components/admin/RevenueChart.vue";
+import PaymentStatusChart from "@/components/admin/PaymentStatusChart.vue";
 
 // Reactive stats object
 const stats = reactive({

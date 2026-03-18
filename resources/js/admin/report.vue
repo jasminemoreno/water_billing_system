@@ -27,8 +27,8 @@
 import { ref, onMounted } from 'vue'
 import api from '@/api.js'
 
-import ReportCard from '@/components/admin/report/ReportCard.vue'
-import ReportPopup from '@/components/admin/report/ReportPopup.vue'
+import ReportCard from '@/components/admin/ReportCard.vue'
+import ReportPopup from '@/components/admin/ReportPopup.vue'
 
 import billingIcon from '@/assets/icons/billing_reports.png'
 import paymentIcon from '@/assets/icons/payment_reports.png'

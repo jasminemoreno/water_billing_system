@@ -28,7 +28,7 @@
           </div>
         </div>
 
-        <!-- Customer info -->
+        <!-- Selected Customer Info -->
         <div v-if="form.customer_name" class="customer-tags">
           <span><b>Customer:</b> {{ form.customer_name }}</span>
           <span><b>Meter No:</b> {{ form.meter_no }}</span>
@@ -78,7 +78,6 @@
           <button type="button" class="close-btn" @click="$emit('close')">Cancel</button>
         </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -91,6 +90,7 @@ const props = defineProps({
   mode: { type: String, default: 'add' },
   payment: { type: Object, default: () => null }
 })
+
 const emit = defineEmits(['saved','close'])
 
 const defaultPenalty = 20
@@ -113,12 +113,13 @@ const totalAmount = computed(() => Number(form.value.amount || 0) + (penaltyAppl
 const customerSearch = ref('')
 const filteredCustomers = ref([])
 
+// Watch payment prop to populate form for view
 watch(() => props.payment, (val) => {
   if(val) {
     form.value = {
       customer_id: val.customer_id || '',
       bill_id: val.bill_id || '',
-      customer_name: val.customer?.customer_name || '',
+      customer_name: val.customer_name || '', // <-- use this
       meter_no: val.meter_no || '',
       amount: val.amount || 0,
       status: val.status || 'Pending',
@@ -137,8 +138,12 @@ const filterCustomers = async () => {
     filteredCustomers.value = []
     return
   }
-  try { const res = await api.get(`/payments/search-customer?query=${customerSearch.value}`); filteredCustomers.value = res.data } 
-  catch(err){ console.error(err) }
+  try { 
+    const res = await api.get(`/payments/search-customer?query=${customerSearch.value}`)
+    filteredCustomers.value = res.data 
+  } catch(err){ 
+    console.error(err) 
+  }
 }
 
 const selectCustomer = (c) => {
@@ -157,18 +162,23 @@ const selectCustomer = (c) => {
 const applyPenalty = () => { penaltyApplied.value = true }
 
 const submitForm = async () => {
-  try{
+  try {
     const payload = { ...form.value, amount: totalAmount.value }
-    await api.post('/payments', payload)
-    emit('saved','Payment added successfully')
+    const res = await api.post('/payments', payload)
+
+    // emit both message and the newly created payment
+    emit('saved', 'Payment added successfully!', res.data.payment)
+
     emit('close')
-  } catch(err){ console.error(err) }
+  } catch(err){
+    console.error(err)
+  }
 }
 
 const deletePayment = async () => {
   try{
     await api.delete(`/payments/${props.payment.id}`)
-    emit('saved','Payment deleted successfully')
+    emit('saved', 'Payment deleted successfully') // success popup in parent
     emit('close')
   } catch(err){ console.error(err) }
 }
