@@ -8,6 +8,7 @@
       @update:searchQuery="searchQuery = $event"
       @edit="openEditPopup"
       @add="openAddPopup"
+      @delete="confirmDeleteBill"
     />
 
     <!-- Add Bill Popup -->
@@ -30,11 +31,19 @@
       @close="editPopup = false"
     />
 
-    <!-- Success Popup -->
+    <!-- Success / Confirm Popup -->
     <SuccessPopup
       v-if="successMessage"
       :message="successMessage"
       @close="successMessage = ''"
+    />
+
+    <SuccessPopup
+      v-if="confirmDelete.show"
+      :message="confirmDelete.message"
+      :isConfirm="true"
+      @confirm="deleteBill(confirmDelete.bill)"
+      @close="confirmDelete.show = false"
     />
 
   </div>
@@ -55,6 +64,13 @@ const searchQuery = ref('')
 const addPopup = ref(false)
 const editPopup = ref(false)
 const successMessage = ref('')
+
+// Confirm delete state
+const confirmDelete = reactive({
+  show: false,
+  bill: null,
+  message: ''
+})
 
 const newBill = reactive({
   customer_id: '',
@@ -95,7 +111,10 @@ const filteredBills = computed(() => {
 onMounted(async () => {
   try {
     const billsRes = await api.get('/bills')
-    bills.value = billsRes.data
+    bills.value = billsRes.data.map(b => ({
+      ...b,
+      customer: b.customer || customers.value.find(c => c.id === b.customer_id)
+    }))
 
     const customersRes = await api.get('/customers')
     customers.value = customersRes.data
@@ -104,7 +123,7 @@ onMounted(async () => {
   }
 })
 
-// --- Open Add Popup ---
+// --- Open Add/Edit Popup ---
 const openAddPopup = () => {
   Object.assign(newBill, {
     customer_id: '',
@@ -119,7 +138,6 @@ const openAddPopup = () => {
   addPopup.value = true
 }
 
-// --- Open Edit Popup ---
 const openEditPopup = (bill) => {
   Object.assign(editBill, {
     ...bill,
@@ -133,10 +151,13 @@ const storeBill = async (formData) => {
   try {
     Object.keys(errors).forEach(k => delete errors[k])
     const res = await api.post('/bills', { ...formData })
-    
-    // Push the returned bill into table
-    bills.value.push(res.data.bill)
 
+    const newBillObj = {
+      ...res.data.bill,
+      customer: res.data.bill.customer || customers.value.find(c => c.id === res.data.bill.customer_id)
+    }
+
+    bills.value.unshift(newBillObj)
     addPopup.value = false
     successMessage.value = 'Bill added successfully!'
   } catch (err) {
@@ -151,14 +172,37 @@ const updateBill = async (formData) => {
     Object.keys(errors).forEach(k => delete errors[k])
     const res = await api.put(`/bills/${formData.id}`, { ...formData })
 
-    const idx = bills.value.findIndex(b => b.id === formData.id)
-    if (idx !== -1) bills.value[idx] = res.data.bill
+    const updatedBillObj = {
+      ...res.data.bill,
+      customer: res.data.bill.customer || customers.value.find(c => c.id === res.data.bill.customer_id)
+    }
 
+    const idx = bills.value.findIndex(b => b.id === formData.id)
+    if (idx !== -1) bills.value.splice(idx, 1, updatedBillObj)
     editPopup.value = false
     successMessage.value = 'Bill updated successfully!'
   } catch (err) {
     if (err.response?.status === 422) Object.assign(errors, err.response.data.errors)
     else console.error('Failed to update bill:', err)
+  }
+}
+
+// --- Confirm Delete Bill ---
+const confirmDeleteBill = (bill) => {
+  confirmDelete.show = true
+  confirmDelete.bill = bill
+  confirmDelete.message = `Are you sure you want to delete bill #${bill.id}?`
+}
+
+// --- Delete Bill ---
+const deleteBill = async (bill) => {
+  try {
+    await api.delete(`/bills/${bill.id}`)
+    bills.value = bills.value.filter(b => b.id !== bill.id)
+    successMessage.value = 'Bill deleted successfully!'
+    confirmDelete.show = false
+  } catch (err) {
+    console.error('Failed to delete bill:', err)
   }
 }
 </script>
@@ -167,7 +211,6 @@ const updateBill = async (formData) => {
 .bill-page {
   margin-left: 250px;
   padding: 80px 30px 30px 30px;
-  
   min-height: 100vh;
   background-color: #f4f6f8;
 }

@@ -6,7 +6,7 @@
 
       <form @submit.prevent="handleSubmit">
 
-        <!-- Customer Search -->
+        <!-- Customer Search (only in Add mode) -->
         <input
           v-if="mode === 'add'"
           v-model="customerSearch"
@@ -59,7 +59,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   form: Object,
@@ -73,6 +73,7 @@ const form = props.form
 const customerSearch = ref('')
 const filteredCustomers = ref([])
 
+// --- Filter customers while typing ---
 function filterCustomers() {
   const q = customerSearch.value.toLowerCase()
   filteredCustomers.value = props.customers.filter(c =>
@@ -80,6 +81,7 @@ function filterCustomers() {
   )
 }
 
+// --- Select a customer from search results ---
 function selectCustomer(c) {
   form.customer_id = c.id
   form.customer_name = c.customer_name
@@ -89,23 +91,26 @@ function selectCustomer(c) {
   filteredCustomers.value = []
 }
 
+// --- Calculate total (example: ₱10 per m³) ---
 function calculateTotal() {
   form.total = (form.consumption || 0) * 10
 }
 
+// --- Set due and disconnection dates automatically ---
 function setDates() {
   if (!form.billing_date) return
 
   const billDate = new Date(form.billing_date)
   const dueDate = new Date(billDate)
-  dueDate.setDate(dueDate.getDate() + 7)
+  dueDate.setDate(dueDate.getDate() + 7) // 7 days later
   const disconnectDate = new Date(dueDate)
-  disconnectDate.setDate(disconnectDate.getDate() + 5)
+  disconnectDate.setDate(disconnectDate.getDate() + 5) // +5 days after due
 
   form.due_date = dueDate.toISOString().split('T')[0]
   form.disconnection_date = disconnectDate.toISOString().split('T')[0]
 }
 
+// --- Emit form submit ---
 function handleSubmit() {
   emit('save', { ...form })
 }
@@ -186,6 +191,4 @@ function handleSubmit() {
 .result-item:hover {
   background: #f1faff;
 }
-
-
 </style>

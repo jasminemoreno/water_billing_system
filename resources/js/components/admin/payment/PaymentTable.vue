@@ -1,6 +1,5 @@
 <template>
   <div class="payment-table-container">
-
     <!-- Search bar -->
     <div class="search-bar">
       <input
@@ -32,16 +31,8 @@
           <td>{{ payment.payment_method || '-' }}</td>
           <td>{{ payment.status || '-' }}</td>
           <td class="action-icons">
-            <!-- Edit icon -->
-            <button @click="$emit('edit', payment)">
-              <img :src="editIcon" alt="Edit" />
-            </button>
-
-            <!-- View icon only for online payments -->
-            <button
-              v-if="payment.payment_method && payment.payment_method.toLowerCase() !== 'cash'"
-              @click="$emit('view', payment)"
-            >
+            <!-- View icon -->
+            <button @click="$emit('view', payment)">
               <img :src="viewIcon" alt="View" />
             </button>
 
@@ -65,9 +56,6 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
-
-// Import icons
-import editIconImg from '@/assets/icons/edit.png';
 import viewIconImg from '@/assets/icons/view.png';
 import deleteIconImg from '@/assets/icons/delete.png';
 
@@ -76,16 +64,13 @@ const props = defineProps({
   searchQuery: { type: String, default: '' }
 });
 
-const emit = defineEmits(['edit', 'view', 'delete', 'add', 'update:searchQuery']);
+const emit = defineEmits(['view', 'delete', 'add', 'update:searchQuery']);
 
-// Local search input
 const searchQueryLocal = ref(props.searchQuery);
 
-// Sync local input with parent
 watch(searchQueryLocal, val => emit('update:searchQuery', val));
 watch(() => props.searchQuery, val => searchQueryLocal.value = val);
 
-// Filter payments by search query
 const filteredPayments = computed(() => {
   return props.payments.filter(p =>
     (p.customer?.customer_name || '').toLowerCase().includes(searchQueryLocal.value.toLowerCase()) ||
@@ -94,8 +79,6 @@ const filteredPayments = computed(() => {
   );
 });
 
-// Icons
-const editIcon = editIconImg;
 const viewIcon = viewIconImg;
 const deleteIcon = deleteIconImg;
 </script>
@@ -158,6 +141,11 @@ const deleteIcon = deleteIconImg;
   cursor: pointer;
 }
 
+.action-icons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .action-icons img {
   width: 20px;
   height: 20px;
@@ -165,7 +153,7 @@ const deleteIcon = deleteIconImg;
   transition: 0.2s;
 }
 
-.action-icons button:hover img {
+.action-icons button:hover img:not(:disabled) {
   transform: scale(1.2);
   opacity: 0.8;
 }

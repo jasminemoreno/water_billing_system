@@ -47,9 +47,6 @@ class BillController extends Controller
      */
     public function store(Request $request)
     {
-        // -------------------------
-        // 1. Validate input
-        // -------------------------
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'meter_no' => 'required|string',
@@ -59,9 +56,7 @@ class BillController extends Controller
             'disconnection_date' => 'required|date|after_or_equal:due_date',
         ]);
 
-        // -------------------------
-        // 2. Prevent duplicate bill for same customer/month
-        // -------------------------
+        // Prevent duplicate bill for same customer/month
         $billingMonth = Carbon::parse($validated['billing_date'])->month;
         $billingYear = Carbon::parse($validated['billing_date'])->year;
 
@@ -78,23 +73,17 @@ class BillController extends Controller
             ], 422);
         }
 
-        // -------------------------
-        // 3. Create the bill
-        // -------------------------
         $bill = Bill::create([
             'customer_id' => $validated['customer_id'],
             'meter_no' => $validated['meter_no'],
             'consumption' => $validated['consumption'],
-            'total' => $validated['consumption'] * 10, // price per m³, adjust as needed
+            'total' => $validated['consumption'] * 10, // price per m³
             'billing_date' => $validated['billing_date'],
             'due_date' => $validated['due_date'],
             'disconnection_date' => $validated['disconnection_date'],
-            'status' => 'Unpaid', // default status
+            'status' => 'Unpaid',
         ]);
 
-        // -------------------------
-        // 4. Create notification for customer
-        // -------------------------
         Notification::create([
             'customer_id' => $bill->customer_id,
             'type' => 'bill_created',
@@ -102,16 +91,12 @@ class BillController extends Controller
             'read' => false,
         ]);
 
-        // -------------------------
-        // 5. Return response with bill + customer
-        // -------------------------
         return response()->json([
             'success' => true,
             'message' => 'Bill added successfully!',
             'bill' => $bill->load('customer')
         ]);
     }
-
 
     /**
      * Update an existing bill
@@ -127,7 +112,6 @@ class BillController extends Controller
             'disconnection_date' => 'required|date|after_or_equal:due_date',
         ]);
 
-        // Prevent duplicate bill for same customer in same month/year (excluding current bill)
         $billingMonth = Carbon::parse($validated['billing_date'])->month;
         $billingYear = Carbon::parse($validated['billing_date'])->year;
 
@@ -154,7 +138,6 @@ class BillController extends Controller
             'disconnection_date' => $validated['disconnection_date'],
         ]);
 
-        // Update notification if exists
         $notification = Notification::where('customer_id', $bill->customer_id)
             ->where('type', 'bill_created')
             ->where('message', 'like', "%meter {$bill->meter_no}%")
@@ -174,7 +157,30 @@ class BillController extends Controller
     }
 
     /**
-     * Delete a bill
+     * Soft delete a bill
      */
- 
+    public function destroy(Bill $bill)
+    {
+        $bill->delete(); // Soft delete
+        return response()->json(['message' => 'Bill deleted successfully.']);
+    }
+
+    /**
+     * Billing history for a specific month/year
+     */
+    public function billingHistoryByMonth($year, $month)
+    {
+        $bills = Bill::withTrashed()
+            ->with('customer')
+            ->whereYear('billing_date', $year)
+            ->whereMonth('billing_date', $month)
+            ->orderByDesc('billing_date')
+            ->get();
+
+        if ($bills->isEmpty()) {
+            return response()->json(['message' => 'No bills recorded for this month', 'bills' => []]);
+        }
+
+        return response()->json(['bills' => $bills]);
+    }
 }

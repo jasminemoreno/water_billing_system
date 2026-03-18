@@ -1,40 +1,14 @@
 <template>
   <div class="report-page">
-
-    <!-- Reports Dashboard -->
     <div class="reports-dashboard">
-
-      <ReportCard
-        :icon="billingIcon"
-        title="Billing Reports"
-        color="#4f46e5"
-        @click="openPopup('billing')"
-      />
-
-      <ReportCard
-        :icon="paymentIcon"
-        title="Payment Reports"
-        color="#16a34a"
-        @click="openPopup('payment')"
-      />
-
-      <ReportCard
-        :icon="unpaidIcon"
-        title="Unpaid Bills"
-        color="#dc2626"
-        @click="openPopup('unpaid')"
-      />
-
-      <ReportCard
-        :icon="revenueIcon"
-        title="Monthly Revenue"
-        color="#f59e0b"
-        @click="openPopup('revenue')"
-      />
-
+      <ReportCard :icon="billingIcon" title="Billing Reports" color="#4f46e5" @click="openPopup('billing')" />
+      <ReportCard :icon="paymentIcon" title="Payment Reports" color="#16a34a" @click="openPopup('payment')" />
+      <ReportCard :icon="paymentHistoryIcon" title="Payment History" color="#0ea5e9" @click="openPopup('history')" />
+      <ReportCard :icon="billHistoryIcon" title="Bill History" color="#f97316" @click="openPopup('bill-history')" />
+      <ReportCard :icon="unpaidIcon" title="Unpaid Bills" color="#dc2626" @click="openPopup('unpaid')" />
+      <ReportCard :icon="revenueIcon" title="Monthly Revenue" color="#f59e0b" @click="openPopup('revenue')" />
     </div>
 
-    <!-- Report Popup -->
     <ReportPopup
       v-if="popup.show"
       :show="popup.show"
@@ -42,9 +16,10 @@
       :headers="popup.headers"
       :keys="popup.keys"
       :rows="popup.rows"
+      :customContent="popup.customContent"
       @close="popup.show = false"
+      @year-month-selected="handleDateFilter"
     />
-
   </div>
 </template>
 
@@ -57,124 +32,172 @@ import ReportPopup from '@/components/admin/report/ReportPopup.vue'
 
 import billingIcon from '@/assets/icons/billing_reports.png'
 import paymentIcon from '@/assets/icons/payment_reports.png'
+import paymentHistoryIcon from '@/assets/icons/history.png'
 import unpaidIcon from '@/assets/icons/unpaid_bills.png'
 import revenueIcon from '@/assets/icons/revenue.png'
+import billHistoryIcon from '@/assets/icons/bill_history.png'
 
-// --- STATE ---
+// data
 const bills = ref([])
 const payments = ref([])
 const unpaidBills = ref([])
 const monthlyRevenue = ref({})
 
+// reactive popup object
 const popup = ref({
   show: false,
+  type: null,
   title: '',
   headers: [],
   keys: [],
-  rows: []
+  rows: [],
+  customContent: null
 })
 
-// --- LOAD REPORT DATA ---
+// load initial data
 onMounted(async () => {
-  try {
-    const res = await api.get('/reports')
-
-    bills.value = res.data.bills || []
-    payments.value = res.data.payments || []          // now includes both Cash & Online
-    unpaidBills.value = res.data.unpaidBills || []
-    monthlyRevenue.value = res.data.monthlyRevenue || {}
-
-  } catch (err) {
-    console.error('Failed to load reports:', err)
-  }
+  const res = await api.get('/reports')
+  bills.value = res.data.bills
+  payments.value = res.data.payments
+  unpaidBills.value = res.data.unpaidBills
+  monthlyRevenue.value = res.data.monthlyRevenue
 })
 
-// --- OPEN POPUP ---
+// function to open the popup for each card
 const openPopup = (type) => {
+  popup.value.type = type
+  popup.value.show = true
+  popup.value.rows = []
+
+  if (type === 'bill-history') {
+    popup.value.title = 'Bill History'
+    popup.value.headers = ['ID','Customer','Meter','Consumption','Total','Billing Date','Due Date','Disconnection Date','Status']
+    popup.value.keys = ['id','customer','meter','consumption','total','billing_date','due_date','disconnection_date','status']
+    popup.value.customContent = {
+      type: 'year-month-select',
+      selectedYear: new Date().getFullYear(),
+      selectedMonth: new Date().getMonth() + 1
+    }
+    fetchBillHistory(popup.value.customContent.selectedYear, popup.value.customContent.selectedMonth)
+  }
+
+  if (type === 'history') {
+    popup.value.title = 'Payment History'
+    popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Status']
+    popup.value.keys = ['id','customer','bill','amount','method','date','status']
+    popup.value.customContent = {
+      type: 'year-month-select',
+      selectedYear: new Date().getFullYear(),
+      selectedMonth: new Date().getMonth() + 1
+    }
+    fetchHistory(popup.value.customContent.selectedYear, popup.value.customContent.selectedMonth)
+  }
 
   if (type === 'billing') {
-    popup.value = {
-      show: true,
-      title: 'All Bills',
-      headers: ['ID','Customer','Meter No','Amount','Status'],
-      keys: ['id','customer_name','meter_no','total','status'],
-      rows: bills.value.map(b => ({
-        id: b.id,
-        customer_name: b.customer?.customer_name || '-',
-        meter_no: b.meter_no,
-        total: Number(b.total).toFixed(2),
-        status: Array.isArray(b.payments) && b.payments.some(p => ['Approved','Verified'].includes(p.status))
-          ? 'Paid'
-          : 'Unpaid'
-      }))
-    }
+    popup.value.title = 'Billing Reports'
+    popup.value.headers = ['ID','Customer','Meter','Consumption','Total','Billing Date','Status']
+    popup.value.keys = ['id','customer','meter','consumption','total','billing_date','status']
+    popup.value.customContent = null
+    popup.value.rows = bills.value.map(b => ({
+      id: b.id,
+      customer: b.customer?.customer_name,
+      meter: b.meter_no,
+      consumption: b.consumption,
+      total: Number(b.total).toFixed(2),
+      billing_date: new Date(b.billing_date).toLocaleDateString(),
+      status: b.payments.some(p => ['Approved','Verified'].includes(p.status)) ? 'Paid' : 'Unpaid'
+    }))
   }
 
   if (type === 'payment') {
-    popup.value = {
-      show: true,
-      title: 'Payment Reports (Cash & Online)',
-      headers: ['ID','Customer','Bill ID','Amount','Payment Method','Date'], // added Payment Method
-      keys: ['id','customer_name','bill_id','amount','payment_method','created_at'],
-      rows: payments.value.map(p => ({
-        id: p.id,
-        customer_name: p.customer?.customer_name || '-',
-        bill_id: p.bill_id,
-        amount: Number(p.amount).toFixed(2),
-        payment_method: p.payment_method || '-',  // Cash or Online
-        created_at: new Date(p.created_at).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})
-      }))
-    }
+    popup.value.title = 'Payment Reports'
+    popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Status']
+    popup.value.keys = ['id','customer','bill','amount','method','date','status']
+    popup.value.customContent = null
+    popup.value.rows = payments.value.map(p => ({
+      id: p.id,
+      customer: p.customer?.customer_name,
+      bill: p.bill_id,
+      amount: Number(p.amount).toFixed(2),
+      method: p.payment_method,
+      date: new Date(p.created_at).toLocaleDateString(),
+      status: p.status
+    }))
   }
 
   if (type === 'unpaid') {
-    popup.value = {
-      show: true,
-      title: `Unpaid Bills (${unpaidBills.value.length})`,
-      headers: ['ID','Customer','Meter No','Amount'],
-      keys: ['id','customer_name','meter_no','total'],
-      rows: unpaidBills.value.map(b => ({
-        id: b.id,
-        customer_name: b.customer?.customer_name || '-',
-        meter_no: b.meter_no,
-        total: Number(b.total).toFixed(2)
-      }))
-    }
+    popup.value.title = 'Unpaid Bills'
+    popup.value.headers = ['ID','Customer','Meter','Consumption','Total','Billing Date']
+    popup.value.keys = ['id','customer','meter','consumption','total','billing_date']
+    popup.value.customContent = null
+    popup.value.rows = unpaidBills.value.map(b => ({
+      id: b.id,
+      customer: b.customer?.customer_name,
+      meter: b.meter_no,
+      consumption: b.consumption,
+      total: Number(b.total).toFixed(2),
+      billing_date: new Date(b.billing_date).toLocaleDateString()
+    }))
   }
 
   if (type === 'revenue') {
-    popup.value = {
-      show: true,
-      title: 'Monthly Revenue (Cash & Online)',
-      headers: ['Month','Revenue (₱)'],
-      keys: ['month','total'],
-      rows: Object.entries(monthlyRevenue.value).map(([month,total]) => ({
-        month: new Date(0, month-1).toLocaleString('default',{ month:'long' }),
-        total: Number(total).toFixed(2)
-      }))
-    }
+    popup.value.title = 'Monthly Revenue'
+    popup.value.headers = ['Month','Revenue']
+    popup.value.keys = ['month','revenue']
+    popup.value.customContent = null
+    popup.value.rows = Object.entries(monthlyRevenue.value).map(([m, total]) => ({
+      month: m,
+      revenue: Number(total).toFixed(2)
+    }))
   }
+}
 
+// fetch functions
+const fetchHistory = async (year, month) => {
+  const res = await api.get(`/reports/payment-history/${year}/${month}`)
+  popup.value.rows = res.data.payments.map(p => ({
+    id: p.id,
+    customer: p.customer?.customer_name,
+    bill: p.bill_id,
+    amount: Number(p.amount).toFixed(2),
+    method: p.payment_method,
+    date: new Date(p.created_at).toLocaleDateString(),
+    status: p.status
+  }))
+}
+
+const fetchBillHistory = async (year, month) => {
+  const res = await api.get(`/reports/bill-history/${year}/${month}`)
+  popup.value.rows = res.data.bills.map(b => ({
+    id: b.id,
+    customer: b.customer?.customer_name,
+    meter: b.meter_no,
+    consumption: b.consumption,
+    total: Number(b.total).toFixed(2),
+    billing_date: new Date(b.billing_date).toLocaleDateString(),
+    due_date: new Date(b.due_date).toLocaleDateString(),
+    disconnection_date: b.disconnection_date ? new Date(b.disconnection_date).toLocaleDateString() : '',
+    status: b.payments.some(p => ['Approved','Verified'].includes(p.status)) ? 'Paid' : 'Unpaid'
+  }))
+}
+
+// handle year/month filter from popup
+const handleDateFilter = (y, m) => {
+  if (popup.value.type === 'payment-history') fetchHistory(y, m)
+  if (popup.value.type === 'bill-history') fetchBillHistory(y, m)
 }
 </script>
 
 <style scoped>
-.report-page{
-  margin-left:300px;
-  padding:80px 30px 30px 30px;
-  min-height:100vh;
-  background:#f4f6f8;
+.report-page {
+  margin-left: 300px;
+  padding: 80px 30px;
+  background: #f4f6f8;
+  min-height: 100vh;
 }
-
-.reports-dashboard{
-  display:flex;
-  gap:30px;
-  flex-wrap:wrap;
-  justify-content:flex-start;
-}
-
-/* Optional: Add scroll if many cards */
-.reports-dashboard::-webkit-scrollbar{
-  height:6px;
+.reports-dashboard {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
 }
 </style>

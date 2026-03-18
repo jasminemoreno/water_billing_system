@@ -1,9 +1,7 @@
 <template>
-  <div class="report-card" :style="{ backgroundColor: color }" @click="$emit('click')">
-    <img :src="icon" :alt="title" />
+  <div class="card" :style="{backgroundColor: color}" @click="$emit('click')">
+    <img :src="icon" class="icon" alt="icon">
     <h3>{{ title }}</h3>
-    <!-- Display stat number -->
-    <p v-if="stat !== undefined" class="stat">{{ stat }}</p>
   </div>
 </template>
 
@@ -11,54 +9,34 @@
 const props = defineProps({
   icon: String,
   title: String,
-  stat: [Number, String],   // NEW: prop to show summary/stat
-  color: {
-    type: String,
-    default: '#00bcd4' // default color if none provided
-  }
+  color: String
 })
 </script>
 
 <style scoped>
-.report-card {
-  color: #001f3f;
-  border-radius: 15px;
-  width: 300px;
-  height: 400px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-  transition: all 0.3s ease;
-  border: 3px solid transparent;
+.card{
+  width:180px;
+  height:180px;
+  border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  color:white;
+  cursor:pointer;
+  transition: all 0.2s ease;
 }
-
-.report-card:hover {
-  transform: translateY(-8px);
-  border: 3px solid #007bff;
+.card:hover{
+  transform: translateY(-5px);
+  box-shadow:0 8px 25px rgba(0,0,0,0.2);
 }
-
-.report-card img {
-  width: 60px;
-  height: 60px;
-  margin-bottom: 12px;
+.icon{
+  width:50px;
+  height:50px;
+  margin-bottom:10px;
 }
-
-.report-card h3 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  text-align: center;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-
-/* Stat number styling */
-.stat {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #111827;
-  margin-top: 8px;
+h3{
+  text-align:center;
+  font-size:16px;
 }
 </style>

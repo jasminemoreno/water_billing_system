@@ -4,7 +4,6 @@
       :payments="payments"
       :searchQuery="searchQuery"
       @add="openAdd"
-      @edit="openEdit"
       @view="openView"
       @delete="openDelete"
     />
@@ -39,10 +38,9 @@ const successMessage = ref("");
 const mode = ref("add");
 const selectedPayment = ref(null);
 
-// Fetch payments
 const fetchPayments = async () => {
   try {
-    const res = await api.get("/payments"); // token automatically attached
+    const res = await api.get("/payments");
     payments.value = res.data;
   } catch (error) {
     console.error("Error fetching payments:", error);
@@ -51,9 +49,8 @@ const fetchPayments = async () => {
 
 onMounted(fetchPayments);
 
-// Popup handlers
+// Popups
 const openAdd = () => { mode.value = "add"; selectedPayment.value = {}; showForm.value = true; };
-const openEdit = (payment) => { mode.value = "edit"; selectedPayment.value = { ...payment }; showForm.value = true; };
 const openView = (payment) => { mode.value = "view"; selectedPayment.value = { ...payment }; showForm.value = true; };
 const openDelete = (payment) => { mode.value = "delete"; selectedPayment.value = { ...payment }; showForm.value = true; };
 const closeForm = () => { showForm.value = false; };

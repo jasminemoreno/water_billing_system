@@ -1,7 +1,5 @@
 <template>
   <div class="bill-table-container">
-
-    <!-- Search bar -->
     <div class="search-bar">
       <input
         type="text"
@@ -10,7 +8,6 @@
       />
     </div>
 
-    <!-- Bill table -->
     <table class="bill-table">
       <thead>
         <tr>
@@ -36,12 +33,12 @@
           <td>{{ formatDate(bill.due_date) }}</td>
           <td>{{ formatDate(bill.disconnection_date) }}</td>
           <td>
-            <img 
-              :src="editIcon" 
-              alt="Edit" 
-              class="edit-icon"
-              @click="$emit('edit', bill)"
-            />
+            <button class="icon-btn" @click="$emit('edit', bill)">
+              <img :src="editIcon" alt="Edit" />
+            </button>
+            <button class="icon-btn" @click="$emit('delete', bill)">
+              <img :src="deleteIcon" alt="Delete" />
+            </button>
           </td>
         </tr>
 
@@ -51,7 +48,6 @@
       </tbody>
     </table>
 
-    <!-- Add Bill Button -->
     <button class="add-btn" @click="$emit('add')">+</button>
   </div>
 </template>
@@ -59,26 +55,26 @@
 <script setup>
 import { ref, watch } from 'vue'
 import editIconImg from '@/assets/icons/edit.png'
+import deleteIconImg from '@/assets/icons/delete.png'
 
 const props = defineProps({
   bills: { type: Array, default: () => [] },
   searchQuery: { type: String, default: '' }
 })
 
-const emit = defineEmits(['edit', 'add', 'update:searchQuery'])
+const emit = defineEmits(['edit', 'add', 'delete', 'update:searchQuery'])
 
 const searchQueryLocal = ref(props.searchQuery)
 watch(searchQueryLocal, val => emit('update:searchQuery', val))
 watch(() => props.searchQuery, val => searchQueryLocal.value = val)
 
 const editIcon = editIconImg
+const deleteIcon = deleteIconImg
 
 function formatDate(date) {
   if (!date) return '-'
   return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
+    month: 'short', day: 'numeric', year: 'numeric'
   })
 }
 </script>
@@ -91,12 +87,10 @@ function formatDate(date) {
 .bill-table th, .bill-table td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; }
 .bill-table th { background: #007bff; color: white; text-transform: uppercase; font-size: 13px; }
 .bill-table tr:hover { background: #f1faff; }
+
 .add-btn { position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px; font-size: 26px; background-color: #007bff; color:white; border-radius: 50%; border:none; cursor:pointer; }
 .add-btn:hover { background-color: #00a0ff; transform: scale(1.05); transition:0.2s; }
-/* Edit icon size */
-.edit-icon{
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
+
+.icon-btn { border: none; background: transparent; cursor: pointer; padding: 2px; margin: 0 2px; }
+.icon-btn img { width: 20px; height: 20px; }
 </style>

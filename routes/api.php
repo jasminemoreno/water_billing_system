@@ -57,6 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bills', [BillController::class, 'index']);
     Route::get('/bills/customers/search', [BillController::class, 'searchCustomers']);
     Route::post('/bills', [BillController::class, 'store']);
+    Route::delete('/bills/{bill}', [BillController::class, 'destroy']);
     Route::put('/bills/{bill}', [BillController::class, 'update']);
 
     // Payments
@@ -71,6 +72,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index']);
+    Route::get('reports/payment-history/{year}/{month}', [ReportController::class, 'paymentHistoryByMonth']);
+    Route::get('reports/bill-history/{year}/{month}', [ReportController::class, 'billHistoryByMonth']);
+    
 
     // User Management
     Route::get('/admin/user-management', [UserManagementController::class, 'index']);
@@ -91,6 +95,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [CustomerHomeController::class, 'dashboard']);
     Route::get('/dashboardData', [CustomerHomeController::class, 'dashboardData']);
     Route::get('/bills', [CustomerBillController::class, 'index']);
+
     Route::post('/logout', [CustomerAuthController::class, 'logout']);
 
     Route::get('/paybills', [CustomerPaymentController::class, 'index']);

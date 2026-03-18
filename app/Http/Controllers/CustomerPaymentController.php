@@ -4,68 +4,65 @@ namespace App\Http\Controllers;
 
 use App\Models\Bill;
 use App\Models\Payment;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class CustomerPaymentController extends Controller
 {
-
+    // ---------------------------
     // SHOW BILLS FOR CUSTOMER
+    // ---------------------------
     public function index()
     {
         $customerId = auth('customer-api')->id();
 
         $bills = Bill::where('customer_id', $customerId)
-            ->whereIn('status', ['Unpaid','Pending'])
+            ->whereIn('status', ['Unpaid', 'Pending'])
             ->orderByDesc('created_at')
             ->get();
 
         return response()->json($bills);
     }
 
-
-
+    // ---------------------------
     // SUBMIT ONLINE PAYMENT
+    // ---------------------------
     public function store(Request $request, $id)
     {
         $customerId = auth('customer-api')->id();
 
-        $bill = Bill::where('id',$id)
-            ->where('customer_id',$customerId)
+        $bill = Bill::where('id', $id)
+            ->where('customer_id', $customerId)
             ->first();
 
-        if(!$bill){
-            return response()->json([
-                'message' => 'Bill not found'
-            ],404);
+        if (!$bill) {
+            return response()->json(['message' => 'Bill not found'], 404);
         }
 
-        if($bill->status === 'Paid'){
-            return response()->json([
-                'message' => 'This bill is already paid'
-            ],400);
+        if ($bill->status === 'Paid') {
+            return response()->json(['message' => 'This bill is already paid'], 400);
         }
 
-
-        $validator = Validator::make($request->all(),[
+        // Validate request
+        $validator = Validator::make($request->all(), [
             'screenshot' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'meter_no' => 'required'
         ]);
 
-        if($validator->fails()){
-            return response()->json($validator->errors(),422);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
         }
 
-
+        // Handle screenshot upload
         $filename = null;
-
-        if($request->hasFile('screenshot')){
+        if ($request->hasFile('screenshot')) {
             $file = $request->file('screenshot');
-            $filename = time().'_'.$file->getClientOriginalName();
-            $file->move(public_path('uploads/gcash'),$filename);
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/gcash'), $filename);
         }
 
-
+        // Create payment
         $payment = Payment::create([
             'customer_id' => $customerId,
             'bill_id' => $bill->id,
@@ -76,11 +73,17 @@ class CustomerPaymentController extends Controller
             'status' => 'Pending'
         ]);
 
+        // Update bill status
+        $bill->update(['status' => 'Pending']);
 
-        $bill->update([
-            'status' => 'Pending'
+        // ✅ Create notification for payment submitted
+        Notification::create([
+            'customer_id' => $customerId,
+            'payment_id' => $payment->id,
+            'type' => 'payment',
+            'message' => 'Your payment of ₱' . $payment->amount . ' has been submitted and is pending approval.',
+            'read' => false
         ]);
-
 
         return response()->json([
             'message' => 'Payment submitted successfully',
@@ -88,16 +91,16 @@ class CustomerPaymentController extends Controller
         ]);
     }
 
-
-
+    // ---------------------------
     // PAYMENT HISTORY
+    // ---------------------------
     public function history()
     {
         $customerId = auth('customer-api')->id();
 
         $payments = Payment::with('bill')
-            ->where('customer_id',$customerId)
-            ->where('status','Verified')
+            ->where('customer_id', $customerId)
+            ->where('status', 'Verified')
             ->orderByDesc('created_at')
             ->get();
 
