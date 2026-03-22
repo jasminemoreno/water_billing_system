@@ -1,5 +1,3 @@
-
-
 <template>
   <div class="admin-profile-page page-container">
 
@@ -50,7 +48,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import api from '@/api.js'; // use api.js with withCredentials
 import EditProfilePopup from '@/components/admin/profile/EditProfilePopup.vue';
 
 const showEdit = ref(false);
@@ -64,22 +62,15 @@ const admin = ref({
   profile_photo: ''
 });
 
-// Computed for avatar
 const adminProfilePhoto = computed(() => {
   return admin.value.profile_photo
     ? `/storage/profile_photos/${admin.value.profile_photo}`
-    : '/assets/default-avatar.png'; // fallback if no photo
+    : '/assets/default-avatar.png';
 });
 
-// Fetch admin profile from API
 const fetchAdminProfile = async () => {
-  const token = sessionStorage.getItem('authToken');
-  if (!token) return alert('Not authenticated');
-
   try {
-    const response = await axios.get('/api/admin/profile', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const response = await api.get('/admin/profile'); // no token header needed
     admin.value = response.data;
   } catch (error) {
     console.error(error);
@@ -87,10 +78,9 @@ const fetchAdminProfile = async () => {
   }
 };
 
-// Update profile after editing
 const handleProfileUpdate = (message, updatedAdmin) => {
   toastMessage.value = message;
-  if (updatedAdmin) admin.value = updatedAdmin; // update UI immediately
+  if (updatedAdmin) admin.value = updatedAdmin;
   setTimeout(() => (toastMessage.value = ''), 3000);
 };
 

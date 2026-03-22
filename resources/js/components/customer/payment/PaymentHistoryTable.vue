@@ -26,7 +26,7 @@
             </td>
   
             <td>
-              {{ formatMonth(payment.bill?.created_at) }}
+              {{ formatMonth(payment.bill?.billing_date) }}
             </td>
   
             <td>

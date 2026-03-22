@@ -29,6 +29,6 @@ class Payment extends Model
 
     public function bill()
     {
-        return $this->belongsTo(Bill::class);
+        return $this->belongsTo(Bill::class)->withTrashed();
     }
 }

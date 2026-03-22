@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Validator;
 class CustomerPaymentController extends Controller
 {
     // ---------------------------
-    // SHOW BILLS FOR CUSTOMER
+    // SHOW BILLS FOR PAYMENT
     // ---------------------------
     public function index()
     {
@@ -19,7 +19,7 @@ class CustomerPaymentController extends Controller
 
         $bills = Bill::where('customer_id', $customerId)
             ->whereIn('status', ['Unpaid', 'Pending'])
-            ->orderByDesc('created_at')
+            ->orderByDesc('billing_date')
             ->get();
 
         return response()->json($bills);
@@ -44,7 +44,6 @@ class CustomerPaymentController extends Controller
             return response()->json(['message' => 'This bill is already paid'], 400);
         }
 
-        // Validate request
         $validator = Validator::make($request->all(), [
             'screenshot' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'meter_no' => 'required'
@@ -54,15 +53,14 @@ class CustomerPaymentController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
-        // Handle screenshot upload
         $filename = null;
+
         if ($request->hasFile('screenshot')) {
             $file = $request->file('screenshot');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $filename = time().'_'.$file->getClientOriginalName();
             $file->move(public_path('uploads/gcash'), $filename);
         }
 
-        // Create payment
         $payment = Payment::create([
             'customer_id' => $customerId,
             'bill_id' => $bill->id,
@@ -73,15 +71,13 @@ class CustomerPaymentController extends Controller
             'status' => 'Pending'
         ]);
 
-        // Update bill status
         $bill->update(['status' => 'Pending']);
 
-        // ✅ Create notification for payment submitted
         Notification::create([
             'customer_id' => $customerId,
             'payment_id' => $payment->id,
             'type' => 'payment',
-            'message' => 'Your payment of ₱' . $payment->amount . ' has been submitted and is pending approval.',
+            'message' => 'Your payment is submitted and pending approval.',
             'read' => false
         ]);
 
@@ -100,7 +96,6 @@ class CustomerPaymentController extends Controller
 
         $payments = Payment::with('bill')
             ->where('customer_id', $customerId)
-            ->where('status', 'Verified')
             ->orderByDesc('created_at')
             ->get();
 

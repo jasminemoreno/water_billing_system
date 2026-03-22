@@ -1,12 +1,12 @@
 <template>
   <div class="pay-bills-page">
     <h2>Pay Bills</h2>
+
     <PayBillsTable
       :bills="bills"
       @pay="openModal"
     />
 
-    <!-- Payment Details -->
     <div class="payment-details-card">
       <h3>Payment Details</h3>
       <p><strong>GCash Number:</strong> 09XXXXXXXXX</p>
@@ -14,7 +14,6 @@
       <p>Upload screenshot during payment.</p>
     </div>
 
-    <!-- Payment Modal -->
     <PaymentModal
       :show="showModal"
       :bill="selectedBill"
@@ -22,7 +21,6 @@
       @submitted="onPaymentSuccess"
     />
 
-    <!-- Success Popup -->
     <SuccessPopup
       :show="showSuccess"
       message="Payment submitted successfully! Awaiting admin approval."
@@ -34,7 +32,6 @@
 <script setup>
 import { ref, onMounted } from "vue"
 import api from "@/customerApi"
-
 import PayBillsTable from "@/components/customer/paybill/PayBillsTable.vue"
 import PaymentModal from "@/components/customer/paybill/PaymentPopup.vue"
 import SuccessPopup from "@/components/customer/paybill/SuccessPopup.vue"
@@ -44,16 +41,14 @@ const showModal = ref(false)
 const selectedBill = ref(null)
 const showSuccess = ref(false)
 
-// Fetch unpaid bills from backend
 const fetchBills = async () => {
   try {
-    const res = await api.get("/customer/bills")
-    // Only show unpaid or pending bills
+    const res = await api.get("/customer/paybills")
     bills.value = (res.data || []).filter(
-      (b) => b.status === "Unpaid" || b.status === "Pending"
+      b => b.status === 'Unpaid' || b.status === 'Pending'
     )
-  } catch (error) {
-    console.error("Failed loading bills", error)
+  } catch (err) {
+    console.error("Failed to load bills", err)
   }
 }
 
@@ -62,9 +57,7 @@ const openModal = (bill) => {
   showModal.value = true
 }
 
-const closeModal = () => {
-  showModal.value = false
-}
+const closeModal = () => showModal.value = false
 
 const onPaymentSuccess = () => {
   closeModal()
@@ -72,33 +65,28 @@ const onPaymentSuccess = () => {
   fetchBills()
 }
 
-onMounted(() => {
-  fetchBills()
-})
+onMounted(() => fetchBills())
 </script>
 
 <style scoped>
 .pay-bills-page {
-  margin-left:250px;
-    padding:80px 30px 30px 30px;
-    min-height:100vh;
-    background:#f4f6f8;
-    font-family:'Roboto', sans-serif;
+  margin-left: 250px;
+  padding: 80px 30px 30px 30px;
+  min-height: 100vh;
+  background: #f4f6f8;
+  font-family: 'Roboto', sans-serif;
 }
+
 h2 {
-    margin-bottom: 20px;
-    color: #007bff;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
-    text-align: center;
-    border-color: black ;
-   
-    font-weight: 600;
-  }
-  
+  margin-bottom: 20px;
+  color: #007bff;
+  text-align: center;
+  font-weight: 600;
+}
 
 .payment-details-card {
   margin-top: 20px;
-  background: #f0f4f8;
+  background: #fff;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);

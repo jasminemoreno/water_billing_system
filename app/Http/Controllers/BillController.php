@@ -11,7 +11,7 @@ use Carbon\Carbon;
 class BillController extends Controller
 {
     /**
-     * Get all bills (JSON) for Vue
+     * Get all bills (JSON) for Vue table
      */
     public function index(Request $request)
     {
@@ -52,14 +52,14 @@ class BillController extends Controller
             'meter_no' => 'required|string',
             'consumption' => 'required|numeric|min:0',
             'billing_date' => 'required|date',
-            'due_date' => 'required|date|after_or_equal:billing_date',
-            'disconnection_date' => 'required|date|after_or_equal:due_date',
         ]);
 
-        // Prevent duplicate bill for same customer/month
-        $billingMonth = Carbon::parse($validated['billing_date'])->month;
-        $billingYear = Carbon::parse($validated['billing_date'])->year;
+        // Normalize billing_date to only YYYY-MM-DD
+        $billingDate = Carbon::parse($validated['billing_date'])->startOfDay();
+        $billingMonth = $billingDate->month;
+        $billingYear = $billingDate->year;
 
+        // Prevent duplicate bill for the same customer/month/year
         $existingBill = Bill::where('customer_id', $validated['customer_id'])
             ->whereMonth('billing_date', $billingMonth)
             ->whereYear('billing_date', $billingYear)
@@ -68,26 +68,31 @@ class BillController extends Controller
         if ($existingBill) {
             return response()->json([
                 'success' => false,
-                'message' => 'This customer already has a bill for this month and year.',
+                'message' => 'This customer already has a bill for this month.',
                 'errors' => ['billing_date' => 'Duplicate bill']
             ], 422);
         }
+
+        // Auto-calculate due and disconnection dates
+        $dueDate = $billingDate->copy()->addDays(7);      // 7 days after billing
+        $disconnectionDate = $dueDate->copy()->addDays(5); // 5 days after due
 
         $bill = Bill::create([
             'customer_id' => $validated['customer_id'],
             'meter_no' => $validated['meter_no'],
             'consumption' => $validated['consumption'],
-            'total' => $validated['consumption'] * 10, // price per m³
-            'billing_date' => $validated['billing_date'],
-            'due_date' => $validated['due_date'],
-            'disconnection_date' => $validated['disconnection_date'],
-            'status' => 'Unpaid',
+            'total' => $validated['consumption'] * 10,
+            'billing_date' => $billingDate,
+            'due_date' => $dueDate,
+            'disconnection_date' => $disconnectionDate,
+            'status' => 'Unpaid', // ✅ FIXED: set Unpaid by default, not Pending
         ]);
 
+        // Create notification
         Notification::create([
             'customer_id' => $bill->customer_id,
             'type' => 'bill_created',
-            'message' => "Your bill for meter {$bill->meter_no} is ready. Due date: {$bill->due_date->format('M d, Y')}, Disconnection date: {$bill->disconnection_date->format('M d, Y')}.",
+            'message' => "Your bill for meter {$bill->meter_no} is ready. Due date: {$dueDate->format('M d, Y')}, Disconnection date: {$disconnectionDate->format('M d, Y')}.",
             'read' => false,
         ]);
 
@@ -106,15 +111,15 @@ class BillController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'meter_no' => 'required|string',
-            'consumption' => 'required|numeric',
+            'consumption' => 'required|numeric|min:0',
             'billing_date' => 'required|date',
-            'due_date' => 'required|date',
-            'disconnection_date' => 'required|date|after_or_equal:due_date',
         ]);
 
-        $billingMonth = Carbon::parse($validated['billing_date'])->month;
-        $billingYear = Carbon::parse($validated['billing_date'])->year;
+        $billingDate = Carbon::parse($validated['billing_date'])->startOfDay();
+        $billingMonth = $billingDate->month;
+        $billingYear = $billingDate->year;
 
+        // Prevent duplicate bill for same customer/month/year excluding this bill
         $existingBill = Bill::where('customer_id', $validated['customer_id'])
             ->whereMonth('billing_date', $billingMonth)
             ->whereYear('billing_date', $billingYear)
@@ -123,34 +128,28 @@ class BillController extends Controller
 
         if ($existingBill) {
             return response()->json([
-                'message' => 'This customer already has a bill for this month and year.',
+                'success' => false,
+                'message' => 'This customer already has a bill for this month.',
                 'errors' => ['billing_date' => 'Duplicate bill']
             ], 422);
         }
+
+        // Auto-calculate due and disconnection dates
+        $dueDate = $billingDate->copy()->addDays(7);
+        $disconnectionDate = $dueDate->copy()->addDays(5);
 
         $bill->update([
             'customer_id' => $validated['customer_id'],
             'meter_no' => $validated['meter_no'],
             'consumption' => $validated['consumption'],
             'total' => $validated['consumption'] * 10,
-            'billing_date' => $validated['billing_date'],
-            'due_date' => $validated['due_date'],
-            'disconnection_date' => $validated['disconnection_date'],
+            'billing_date' => $billingDate,
+            'due_date' => $dueDate,
+            'disconnection_date' => $disconnectionDate,
         ]);
 
-        $notification = Notification::where('customer_id', $bill->customer_id)
-            ->where('type', 'bill_created')
-            ->where('message', 'like', "%meter {$bill->meter_no}%")
-            ->first();
-
-        if ($notification) {
-            $notification->update([
-                'message' => "Your bill for meter {$bill->meter_no} is updated. Due date: {$bill->due_date->format('M d, Y')}, Disconnection date: {$bill->disconnection_date->format('M d, Y')}.",
-                'read' => false,
-            ]);
-        }
-
         return response()->json([
+            'success' => true,
             'message' => 'Bill updated successfully!',
             'bill' => $bill->load('customer')
         ]);
@@ -161,26 +160,7 @@ class BillController extends Controller
      */
     public function destroy(Bill $bill)
     {
-        $bill->delete(); // Soft delete
-        return response()->json(['message' => 'Bill deleted successfully.']);
-    }
-
-    /**
-     * Billing history for a specific month/year
-     */
-    public function billingHistoryByMonth($year, $month)
-    {
-        $bills = Bill::withTrashed()
-            ->with('customer')
-            ->whereYear('billing_date', $year)
-            ->whereMonth('billing_date', $month)
-            ->orderByDesc('billing_date')
-            ->get();
-
-        if ($bills->isEmpty()) {
-            return response()->json(['message' => 'No bills recorded for this month', 'bills' => []]);
-        }
-
-        return response()->json(['bills' => $bills]);
+        $bill->delete();
+        return response()->json(['success' => true, 'message' => 'Bill deleted successfully.']);
     }
 }

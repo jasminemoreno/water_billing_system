@@ -15,7 +15,7 @@
   const fetchBills = async () => {
     try {
       // Use token from api (set in customerApi.js)
-      const response = await api.get('/customer/bills')
+      const response = await api.get('/customer/mybills')
   
       // Filter: ensure we have an array
       bills.value = Array.isArray(response.data) ? response.data : []

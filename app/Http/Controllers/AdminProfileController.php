@@ -10,7 +10,7 @@ class AdminProfileController extends Controller
     // Return admin data as JSON (API)
     public function show(Request $request)
     {
-        $admin = $request->user('admin-api'); // use API guard
+        $admin = $request->user(); // use API guard
 
         return response()->json([
             'id' => $admin->id,
@@ -43,7 +43,7 @@ class AdminProfileController extends Controller
     // Optional: full profile update (for future use)
     public function updateProfile(Request $request)
     {
-        $admin = $request->user('admin-api');
+        $admin = $request->user();
 
         $request->validate([
             'fullname' => 'nullable|string|max:255',

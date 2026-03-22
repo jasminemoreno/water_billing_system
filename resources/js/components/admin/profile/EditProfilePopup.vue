@@ -33,13 +33,12 @@
 
 <script setup>
 import { reactive, watch } from 'vue';
-import axios from 'axios';
+import api from '@/api.js'; // use api.js
 
 const props = defineProps({
   visible: Boolean,
   admin: Object
 });
-
 const emit = defineEmits(['close', 'success']);
 
 const form = reactive({
@@ -50,7 +49,6 @@ const form = reactive({
   profile_photo: null
 });
 
-// Fill form when admin prop changes
 watch(() => props.admin, (newAdmin) => {
   form.fullname = newAdmin.fullname || '';
   form.phone = newAdmin.phone || '';
@@ -64,9 +62,6 @@ const handleFileUpload = (e) => {
 };
 
 const updateProfile = async () => {
-  const token = sessionStorage.getItem('admin_token');
-  if (!token) return alert('Not authenticated');
-
   const data = new FormData();
   data.append('fullname', form.fullname);
   data.append('phone', form.phone);
@@ -75,14 +70,7 @@ const updateProfile = async () => {
   if (form.profile_photo) data.append('profile_photo', form.profile_photo);
 
   try {
-    const response = await axios.post('/api/admin/profile/update', data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    // Send updated admin data to parent
+    const response = await api.post('/admin/profile/update', data); // cookie auth
     emit('success', response.data.message || 'Profile updated successfully', response.data.admin);
     emit('close');
   } catch (error) {

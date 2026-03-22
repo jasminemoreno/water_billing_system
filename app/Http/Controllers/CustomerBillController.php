@@ -8,23 +8,28 @@ use Illuminate\Support\Facades\Auth;
 
 class CustomerBillController extends Controller
 {
-    /**
-     * Display bills assigned to the authenticated customer
-     */
-    public function index(Request $request)
+
+    // ===============================
+    // PAYBILL PAGE → ONLY UNPAID / PENDING
+    // ===============================
+    
+    // ===============================
+    // MYBILL PAGE → ALL BILLS
+    // ===============================
+    public function myBills()
     {
-        // Get the authenticated customer
         $customer = Auth::guard('customer-api')->user();
 
         if (!$customer) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // Retrieve bills only for this customer
-        $bills = Bill::where('customer_id', $customer->id)
-                     ->orderBy('billing_date', 'desc')
-                     ->get();
+        $bills = Bill::withTrashed() // ⭐ VERY IMPORTANT
+        ->where('customer_id',$customer->id)
+        ->orderByDesc('id')
+        ->get();
 
         return response()->json($bills);
     }
+
 }

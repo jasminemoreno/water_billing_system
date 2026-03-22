@@ -66,6 +66,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payments/{id}', [PaymentController::class, 'show']);
     Route::post('/payments', [PaymentController::class, 'store']);
     Route::put('/payments/{id}', [PaymentController::class, 'update']);
+    Route::post('/payments/{id}/verify', [PaymentController::class, 'verify']);
+    Route::post('/payments/{id}/reject', [PaymentController::class, 'reject']);
     Route::delete('/payments/{id}', [PaymentController::class, 'destroy']);
     Route::patch('/payments/{id}/status', [PaymentController::class, 'updateStatus']);
     Route::post('/payments/customer', [PaymentController::class, 'storeCustomerPayment']);
@@ -94,7 +96,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('auth:customer-api')->prefix('customer')->group(function () {
     Route::get('/dashboard', [CustomerHomeController::class, 'dashboard']);
     Route::get('/dashboardData', [CustomerHomeController::class, 'dashboardData']);
-    Route::get('/bills', [CustomerBillController::class, 'index']);
+    Route::get('/mybills', [CustomerBillController::class, 'mybills']);
 
     Route::post('/logout', [CustomerAuthController::class, 'logout']);
 

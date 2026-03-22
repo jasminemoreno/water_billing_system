@@ -17,7 +17,7 @@
             </tr>
             <tr v-for="bill in bills" :key="bill.id">
               <td>{{ bill.id }}</td>
-              <td>{{ formatMonth(bill.created_at) }}</td>
+              <td>{{ formatMonth(bill.billing_date) }}</td>
               <td>₱{{ Number(bill.total ?? 0).toFixed(2) }}</td>
                 <td>
               <span :class="['status', bill.status?.toLowerCase()]">
