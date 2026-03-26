@@ -154,7 +154,9 @@ const openPopup = (type) => {
 
 // fetch functions
 const fetchHistory = async (year, month) => {
+  // call backend endpoint with year/month
   const res = await api.get(`/reports/payment-history/${year}/${month}`)
+  
   popup.value.rows = res.data.payments.map(p => ({
     id: p.id,
     customer: p.customer?.customer_name,
@@ -162,7 +164,8 @@ const fetchHistory = async (year, month) => {
     amount: Number(p.amount).toFixed(2),
     method: p.payment_method,
     date: new Date(p.created_at).toLocaleDateString(),
-    status: p.status
+    // mark paid if approved/verified
+    status: ['Approved','Verified'].includes(p.status) ? 'Paid' : 'Unpaid'
   }))
 }
 
@@ -183,7 +186,7 @@ const fetchBillHistory = async (year, month) => {
 
 // handle year/month filter from popup
 const handleDateFilter = (y, m) => {
-  if (popup.value.type === 'payment-history') fetchHistory(y, m)
+  if (popup.value.type === 'history') fetchHistory(y, m)
   if (popup.value.type === 'bill-history') fetchBillHistory(y, m)
 }
 </script>
