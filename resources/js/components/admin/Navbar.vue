@@ -24,7 +24,7 @@
         <li>
           <router-link to="/admin/setting" class="popup-link">
             <img :src="settingsIcon" />
-            Settings
+            Setting
           </router-link>
         </li>
         <li>
