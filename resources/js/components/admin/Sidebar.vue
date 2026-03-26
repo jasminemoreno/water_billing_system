@@ -50,7 +50,7 @@
         <router-link to="/admin/report" class="sidebar-link" active-class="active">
         <span>
           <img :src="reportIcon" />
-          Reports
+          Report
         </span>
       </router-link>
       </li>
