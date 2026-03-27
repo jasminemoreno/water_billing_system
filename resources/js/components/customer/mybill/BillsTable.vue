@@ -30,17 +30,19 @@
           <td>{{ formatDate(bill.due_date) }}</td>
           <td>{{ formatDate(bill.disconnection_date) }}</td>
           <td>
-            <span
-              :class="[
-                'badge',
-                bill.status === 'Paid' || bill.status === 'Verified' ? 'bg-success' :
-                bill.status === 'Pending' ? 'bg-warning text-dark' :
-                'bg-danger'
-              ]"
-            >
-              {{ bill.status || 'Unpaid' }}
-            </span>
-          </td>
+          <span
+            :class="[
+              'badge',
+              getStatus(bill.status) === 'Paid' || getStatus(bill.status) === 'Verified'
+                ? 'bg-success'
+                : getStatus(bill.status) === 'Pending'
+                ? 'bg-warning text-dark'
+                : 'bg-danger'
+            ]"
+          >
+            {{ getStatus(bill.status) }}
+          </span>
+        </td>
         </tr>
       </tbody>
     </table>
@@ -63,6 +65,14 @@ const props = defineProps({
 // Format dates
 const formatDate = (date, format = 'MMM DD, YYYY') => {
   return date ? dayjs(date).format(format) : '-'
+}
+
+const getStatus = (status) => {
+  if (!status) return 'Unpaid'
+
+  if (status === 'Rejected') return 'Unpaid'
+
+  return status
 }
 </script>
 

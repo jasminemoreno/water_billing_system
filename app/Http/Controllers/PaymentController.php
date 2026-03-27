@@ -144,12 +144,23 @@ class PaymentController extends Controller
         $payment = Payment::findOrFail($id);
 
         if ($payment->status !== 'Pending') {
-            return response()->json(['success'=>false,'message'=>'Payment already processed'], 400);
+            return response()->json([
+                'success'=>false,
+                'message'=>'Payment already processed'
+            ], 400);
         }
 
-        $payment->update(['status'=>'Rejected']);
+        // ✅ Update payment
+        $payment->update(['status' => 'Rejected']);
 
-        // Bill remains unpaid
+        // 🔥 IMPORTANT FIX: update the bill
+        $bill = $payment->bill; // assuming relationship exists
+
+        if ($bill) {
+            $bill->update(['status' => 'Unpaid']);
+        }
+
+        // Notification
         Notification::create([
             'customer_id' => $payment->customer_id,
             'payment_id' => $payment->id,
@@ -158,6 +169,9 @@ class PaymentController extends Controller
             'read' => false
         ]);
 
-        return response()->json(['success'=>true, 'payment'=>$payment]);
+        return response()->json([
+            'success'=>true,
+            'payment'=>$payment
+        ]);
     }
 }
