@@ -12,7 +12,7 @@
         <form @submit.prevent="submitPayment" enctype="multipart/form-data">
           <div class="form-group">
             <label>Amount</label>
-            <input type="text" :value="'₱' + Number(bill?.total ?? 0).toFixed(2)" readonly>
+            <input type="text":value="bill?.total !== undefined ? '₱' + Number(bill.total).toFixed(2) : ''" readonly>
           </div>
   
           <div class="form-group">
@@ -76,7 +76,7 @@
     formData.append("amount", props.bill.total)
     formData.append("message", message.value)
     formData.append("screenshot", screenshot.value)
-    formData.append("meter_no", props.bill.meter_no)
+    formData.append("amount", props.bill?.total ?? 0)
   
     try {
       await api.post(`/customer/paybills/${props.bill.id}`, formData, {
