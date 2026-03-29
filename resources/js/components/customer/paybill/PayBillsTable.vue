@@ -20,7 +20,7 @@ const rows = computed(() =>
   props.bills.map(b => ({
     id: b.id,
     month: dayjs(b.billing_date).format('MMMM YYYY'),
-    total: '₱' + Number(b.total ?? 0).toFixed(2),
+    total: b.total,
     status: b.status
   }))
 )
