@@ -76,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports', [ReportController::class, 'index']);
     Route::get('reports/payment-history/{year}/{month}', [ReportController::class, 'paymentHistoryByMonth']);
     Route::get('reports/bill-history/{year}/{month}', [ReportController::class, 'billHistoryByMonth']);
+    Route::get('/reports/rejected-payments/{year}/{month}', [ReportController::class, 'rejectedPaymentsByMonth']);
     
 
     // User Management

@@ -4,7 +4,7 @@
 
       <h2>{{ title }}</h2>
 
-      <!-- Year/Month Selector -->
+      <!-- YEAR & MONTH FILTER -->
       <div v-if="customContent?.type === 'year-month-select'" class="filter">
         <label>
           Year:
@@ -23,34 +23,75 @@
         </label>
       </div>
 
-      <!-- Table -->
-      <div class="table-wrapper">
+      <!-- TABLE -->
+      <div class="table-wrapper" ref="tableToExport">
         <table>
           <thead>
             <tr>
               <th v-for="h in headers" :key="h">{{ h }}</th>
             </tr>
           </thead>
+
           <tbody>
+            <!-- NO DATA -->
             <tr v-if="rows.length === 0">
               <td :colspan="headers.length" class="no-data">
                 No data available for this selection
               </td>
             </tr>
+
+            <!-- DATA ROWS -->
             <tr v-for="(r, i) in rows" :key="i">
-              <td v-for="k in keys" :key="k">{{ r[k] }}</td>
+              <td v-for="k in keys" :key="k">
+
+                <!-- SCREENSHOT COLUMN -->
+                <template v-if="k === 'screenshot'">
+                  <button 
+                    v-if="r[k]" 
+                    class="view-btn"
+                    @click="openImage(r[k])"
+                  >
+                    View
+                  </button>
+                  <span v-else>-</span>
+                </template>
+
+                <!-- NORMAL COLUMN -->
+                <template v-else>
+                  {{ r[k] }}
+                </template>
+
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
+      <!-- DOWNLOAD BUTTONS ONLY FOR PAYMENT & BILL HISTORY -->
+      <div v-if="type === 'history' || type === 'bill-history'" class="download-buttons">
+        <button @click="downloadPDF">Download PDF</button>
+        <button @click="downloadExcel">Download Excel</button>
+      </div>
+
+      <!-- IMAGE PREVIEW MODAL -->
+      <div v-if="previewImage" class="image-preview-overlay">
+        <div class="image-box">
+          <span class="close-img" @click="previewImage = null">&times;</span>
+          <img :src="previewImage" alt="Screenshot" />
+        </div>
+      </div>
+
+      <!-- CLOSE BUTTON -->
       <button class="close-btn" @click="$emit('close')">Close</button>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import html2pdf from 'html2pdf.js'
+import * as XLSX from 'xlsx'
 
 const props = defineProps({
   show: Boolean,
@@ -58,14 +99,18 @@ const props = defineProps({
   headers: Array,
   keys: Array,
   rows: Array,
-  customContent: Object
+  customContent: Object,
+  type: String
 })
 
 const emit = defineEmits(['close','year-month-selected'])
 
-const year = ref()
-const month = ref()
+const year = ref(null)
+const month = ref(null)
+const previewImage = ref(null)
+const tableToExport = ref(null)
 
+// MONTH OPTIONS
 const months = [
   { value: 1, label: 'January' },
   { value: 2, label: 'February' },
@@ -81,31 +126,88 @@ const months = [
   { value: 12, label: 'December' }
 ]
 
+// YEAR OPTIONS
 const years = []
 const currentYear = new Date().getFullYear()
-for(let y=2026; y<=currentYear; y++) years.push(y)
+for (let y = 2024; y <= currentYear; y++) {
+  years.push(y)
+}
 
-onMounted(()=>{
-  if(props.customContent){
+// INITIALIZE FILTER VALUES
+onMounted(() => {
+  if (props.customContent) {
     year.value = props.customContent.selectedYear || currentYear
-    month.value = props.customContent.selectedMonth || 1
+    month.value = props.customContent.selectedMonth || new Date().getMonth() + 1
   }
 })
 
+// WATCH FOR POPUP OPEN (RESET FILTER PROPERLY)
+watch(() => props.show, (val) => {
+  if (val && props.customContent) {
+    year.value = props.customContent.selectedYear || currentYear
+    month.value = props.customContent.selectedMonth || new Date().getMonth() + 1
+  }
+})
+
+// EMIT FILTER CHANGE
 const change = () => {
   emit('year-month-selected', year.value, month.value)
+}
+
+// OPEN IMAGE PREVIEW
+const openImage = (filename) => {
+  previewImage.value = `http://localhost:8000/uploads/gcash/${filename}`
+}
+
+// -------------------------
+// DOWNLOAD FUNCTIONS
+// -------------------------
+const downloadPDF = () => {
+  if (!tableToExport.value) return
+
+  // Get month name
+  const monthName = months.find(m => m.value === month.value)?.label || ''
+  const headerText = `${monthName} ${props.title}`
+
+  // Create a temporary container with header + table for PDF
+  const container = document.createElement('div')
+  const header = document.createElement('h2')
+  header.textContent = headerText
+  header.style.textAlign = 'center'
+  header.style.marginBottom = '15px'
+  container.appendChild(header)
+  container.appendChild(tableToExport.value.cloneNode(true)) // clone table
+
+  const opt = {
+    margin: 10,
+    filename: `${headerText.replace(/\s/g,'_')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  }
+
+  html2pdf().set(opt).from(container).save()
+}
+
+const downloadExcel = () => {
+  if (!props.rows || props.rows.length === 0) return
+
+  const worksheet = XLSX.utils.json_to_sheet(props.rows)
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, props.title)
+  XLSX.writeFile(workbook, `${props.title.replace(/\s/g,'_')}_${year.value}-${month.value}.xlsx`)
 }
 </script>
 
 <style scoped>
 .overlay {
   position: fixed;
-  inset:0;
+  inset: 0;
   background: rgba(0,0,0,0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
 }
 
 .popup {
@@ -119,94 +221,144 @@ const change = () => {
   box-shadow:0 8px 25px rgba(0,0,0,0.2);
 }
 
-h2{
+h2 {
   text-align:center;
-  font-size:1.5rem;
-  font-weight:700;
   margin-bottom:20px;
-  color:#111827;
+  font-weight:600;
 }
 
-.filter{
+/* FILTER */
+.filter {
   display:flex;
   gap:20px;
   justify-content:center;
   margin-bottom:20px;
 }
 
-.filter label{
+.filter label {
   display:flex;
   flex-direction:column;
-  font-weight:500;
   font-size:14px;
-  color:#374151;
 }
 
-.filter select{
+.filter select {
   margin-top:5px;
   padding:8px 12px;
   border-radius:6px;
-  border:1px solid #d1d5db;
-  font-size:14px;
-  cursor:pointer;
-  background-color:#f9fafb;
+  border:1px solid #ccc;
 }
 
-.filter select:hover{
-  border-color:#4f46e5;
-}
-
-.table-wrapper{
+/* TABLE */
+.table-wrapper {
   overflow-x:auto;
 }
 
-table{
+table {
   width:100%;
   border-collapse:collapse;
+}
+
+th, td {
+  border:1px solid #e5e7eb;
+  padding:10px;
   font-size:14px;
 }
 
-th, td{
-  border:1px solid #e5e7eb;
-  padding:10px 12px;
-  text-align:left;
-}
-
-th{
-  background-color:#f3f4f6;
+th {
+  background:#f3f4f6;
   font-weight:600;
-  color:#374151;
 }
 
-tr:nth-child(even){
-  background-color:#f9fafb;
+tr:nth-child(even) {
+  background:#f9fafb;
 }
 
-tr:hover{
-  background-color:#eef2ff;
-}
-
-.no-data{
+.no-data {
   text-align:center;
   font-style:italic;
-  color:#6b7280;
 }
 
-.close-btn{
+/* DOWNLOAD BUTTONS */
+.download-buttons {
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  margin-top:15px;
+}
+
+.download-buttons button {
+  padding:8px 16px;
+  border:none;
+  border-radius:6px;
+  background:#4f46e5;
+  color:white;
+  cursor:pointer;
+}
+
+.download-buttons button:hover {
+  background:#4338ca;
+}
+
+/* BUTTON */
+.view-btn {
+  padding:5px 10px;
+  background:#16a34a;
+  color:white;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+}
+
+.view-btn:hover {
+  background:#15803d;
+}
+
+/* IMAGE PREVIEW */
+.image-preview-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.7);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:2000;
+}
+
+.image-box {
+  position:relative;
+  background:white;
+  padding:15px;
+  border-radius:10px;
+}
+
+.image-box img {
+  max-width:500px;
+  max-height:400px;
+}
+
+.close-img {
+  position:absolute;
+  top:5px;
+  right:10px;
+  font-size:22px;
+  cursor:pointer;
+}
+
+/* CLOSE BUTTON */
+.close-btn {
+  margin-top:20px;
   display:block;
-  margin:20px auto 0 auto;
+  margin-left:auto;
+  margin-right:auto;
   padding:10px 25px;
-  background-color:#4f46e5;
-  color:#fff;
+  background:#4f46e5;
+  color:white;
   border:none;
   border-radius:8px;
   cursor:pointer;
-  font-weight:600;
-  font-size:14px;
-  transition:all 0.3s ease;
 }
 
-.close-btn:hover{
-  background-color:#4338ca;
+.close-btn:hover {
+  background:#4338ca;
 }
 </style>
