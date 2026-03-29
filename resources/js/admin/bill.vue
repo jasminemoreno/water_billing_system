@@ -26,12 +26,13 @@
 
     <!-- SUCCESS / CONFIRM POPUP -->
     <SuccessPopup
-      v-if="successMessage || confirmDeletePopup"
-      :message="popupMessage"
-      :isConfirm="confirmDeletePopup"
-      @confirm="confirmDelete"
-      @close="closePopup"
-    />
+    v-if="successMessage || confirmDeletePopup || confirmDuplicatePopup"
+    :message="popupMessage"
+    :isConfirm="confirmDeletePopup || confirmDuplicatePopup"
+    :type="confirmDuplicatePopup ? 'warning' : (confirmDeletePopup ? 'error' : 'success')"
+    @confirm="confirmDelete"
+    @close="closePopup"
+  />
 
   </div>
 </template>
@@ -52,6 +53,9 @@ const searchQuery = ref('')
 
 const popupVisible = ref(false)
 const popupMode = ref('add') // 'add' or 'edit'
+
+const confirmDuplicatePopup = ref(false)
+const pendingBillData = ref(null)
 
 // SUCCESS / CONFIRM POPUP STATE
 const successMessage = ref('')           // success after add/edit/delete
@@ -141,12 +145,42 @@ function openEditPopup(bill) {
 // SAVE / ADD / UPDATE BILL
 // ----------------------------
 async function handleSave(formData) {
+
+  // ----------------------------
+  // CHECK DUPLICATE BILL (same customer + same month)
+  // ----------------------------
+  const newDate = new Date(formData.billing_date)
+  const newMonth = newDate.getMonth()
+  const newYear = newDate.getFullYear()
+
+  const hasDuplicate = bills.value.some(b => {
+    if (popupMode.value === 'edit' && b.id === formData.id) return false
+
+    const existingDate = new Date(b.billing_date)
+    return (
+      b.customer_id === formData.customer_id &&
+      existingDate.getMonth() === newMonth &&
+      existingDate.getFullYear() === newYear
+    )
+  })
+
+  if (hasDuplicate && popupMode.value === 'add') {
+  popupMessage.value = 'This customer already has a bill for this month.'
+  successMessage.value = 'warning' // show yellow warning
+  return
+}
+
+  // proceed normally if no duplicate
+  await saveBill(formData)
+}
+
+async function saveBill(formData) {
   try {
     if (popupMode.value === 'add') {
       const res = await api.post('/bills', formData)
-      bills.value.push(res.data.bill)   // update table immediately
+      bills.value.push(res.data.bill)
       popupMessage.value = 'Bill added successfully!'
-      successMessage.value = 'success'  // trigger popup
+      successMessage.value = 'success'
     } else {
       const res = await api.put(`/bills/${formData.id}`, formData)
       const idx = bills.value.findIndex(b => b.id === formData.id)
@@ -172,16 +206,26 @@ function deleteBill(bill) {
 
 // DELETE CONFIRM
 async function confirmDelete() {
-  try {
-    await api.delete(`/bills/${billToDelete.value.id}`)
-    bills.value = bills.value.filter(b => b.id !== billToDelete.value.id)
-    popupMessage.value = 'Bill deleted successfully!'
-  } catch (err) {
-    console.error(err)
-  } finally {
-    confirmDeletePopup.value = false
-    billToDelete.value = null
-    successMessage.value = 'success' // trigger popup
+  if (billToDelete.value) {
+    try {
+      await api.delete(`/bills/${billToDelete.value.id}`)
+      bills.value = bills.value.filter(b => b.id !== billToDelete.value.id)
+      popupMessage.value = 'Bill deleted successfully!'
+    } catch (err) {
+      console.error(err)
+    } finally {
+      confirmDeletePopup.value = false
+      billToDelete.value = null
+      successMessage.value = 'success'
+    }
+    return
+  }
+
+  // DUPLICATE CONFIRM
+  if (pendingBillData.value) {
+    await saveBill(pendingBillData.value)
+    pendingBillData.value = null
+    confirmDuplicatePopup.value = false
   }
 }
 
@@ -189,7 +233,9 @@ async function confirmDelete() {
 function closePopup() {
   successMessage.value = ''
   confirmDeletePopup.value = false
+  confirmDuplicatePopup.value = false
   billToDelete.value = null
+  pendingBillData.value = null
 }
 </script>
 
