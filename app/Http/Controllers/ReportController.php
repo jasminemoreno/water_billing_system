@@ -78,15 +78,17 @@ class ReportController extends Controller
         
 
     }
-    public function rejectedPaymentsByMonth($year, $month)
-    {
-        return response()->json([
-            'payments' => Payment::with('customer')
-                ->where('status', 'Rejected')
-                ->whereYear('created_at', $year)
-                ->whereMonth('created_at', $month)
-                ->get()
-        ]);
-    }
+
+public function rejectedPaymentsByMonth($year, $month)
+{
+    return response()->json([
+        'payments' => Payment::with('customer')
+            ->where('status', 'Rejected')
+            ->whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->get()
+    ]);
+}
+
 
 }
