@@ -28,7 +28,6 @@
           </router-link>
         </li>
         <li>
-          <!-- Logout button -->
           <button @click="logout" class="popup-link">
             <img :src="logoutIcon" />
             Logout
@@ -40,56 +39,93 @@
 </template>
 
 <script>
-import profileIcon from "@/assets/icons/profile.png";
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import axios from "axios";
+import profileIconDefault from "@/assets/icons/profile.png";
 import aboutIcon from "@/assets/icons/about.png";
 import settingsIcon from "@/assets/icons/setting.png";
 import logoutIcon from "@/assets/icons/logout.png";
 
 export default {
   name: "AdminNavbar",
-  data() {
+  setup() {
+    const showPopup = ref(false);
+    const adminName = ref("Admin");
+    const profileIcon = ref(profileIconDefault);
+
+    const toggle = ref(null);
+    const popup = ref(null);
+
+    const togglePopup = () => {
+      showPopup.value = !showPopup.value;
+    };
+
+    const handleOutsideClick = (event) => {
+      if (
+        toggle.value &&
+        !toggle.value.contains(event.target) &&
+        popup.value &&
+        !popup.value.contains(event.target)
+      ) {
+        showPopup.value = false;
+      }
+    };
+
+    // Fetch admin profile
+    const fetchAdminProfile = async () => {
+  try {
+    const response = await axios.get("/admin/profile");
+    const admin = response.data;
+
+    adminName.value = admin.fullname || "Admin";
+
+    // Use full URL directly
+    profileIcon.value = admin.profile_photo || profileIconDefault;
+  } catch (error) {
+    console.error("Failed to fetch admin profile:", error);
+  }
+};
+
+    // Update profile when edited
+    const handleProfileUpdated = (e) => {
+      const updatedAdmin = e.detail;
+      adminName.value = updatedAdmin.fullname || "Admin";
+      profileIcon.value = updatedAdmin.profile_photo || profileIconDefault;
+    };
+
+    const logout = () => {
+      sessionStorage.clear();
+      window.location.href = "/admin/login";
+    };
+
+    onMounted(() => {
+      document.addEventListener("click", handleOutsideClick);
+      window.addEventListener("adminProfileUpdated", handleProfileUpdated);
+      fetchAdminProfile();
+    });
+
+    onBeforeUnmount(() => {
+      document.removeEventListener("click", handleOutsideClick);
+      window.removeEventListener("adminProfileUpdated", handleProfileUpdated);
+    });
+
     return {
-      showPopup: false,
-      adminName: "Admin",
+      showPopup,
+      adminName,
       profileIcon,
       aboutIcon,
       settingsIcon,
       logoutIcon,
+      toggle,
+      popup,
+      togglePopup,
+      logout,
     };
-  },
-  mounted() {
-    document.addEventListener("click", this.handleOutsideClick);
-  },
-  beforeUnmount() {
-    document.removeEventListener("click", this.handleOutsideClick);
-  },
-  methods: {
-    togglePopup() {
-      this.showPopup = !this.showPopup;
-    },
-    handleOutsideClick(event) {
-      if (
-        this.$refs.toggle &&
-        !this.$refs.toggle.contains(event.target) &&
-        this.$refs.popup &&
-        !this.$refs.popup.contains(event.target)
-      ) {
-        this.showPopup = false;
-      }
-    },
-    logout() {
-      // Clear sessionStorage
-      sessionStorage.clear();
-
-      // Navigate to login page and replace history
-      this.$router.replace({ path: "/admin/login" });
-    },
   },
 };
 </script>
 
 <style scoped>
-/* Keep your existing styles as-is */
 .navbar {
   height: 65px;
   background: white;
@@ -127,7 +163,6 @@ export default {
   color: #333;
 }
 
-/* Dropdown / Popup */
 .profile-popup {
   position: absolute;
   top: 70px;

@@ -18,11 +18,13 @@ class AdminProfileController extends Controller
             'phone' => $admin->phone,
             'gender' => $admin->gender,
             'birthdate' => $admin->birthdate,
-            'profile_photo' => $admin->profile_photo,
+            'profile_photo' => $admin->profile_photo
+                ? asset('storage/profile_photos/' . $admin->profile_photo) // full URL
+                : null, // fallback
         ]);
     }
 
-    // Update only phone (and optional other profile fields)
+    // Update only phone (optional)
     public function updatePhone(Request $request)
     {
         $admin = $request->user();
@@ -36,11 +38,11 @@ class AdminProfileController extends Controller
 
         return response()->json([
             'message' => 'Phone number updated successfully.',
-            'admin' => $admin,
+            'admin' => $this->formatAdmin($admin),
         ]);
     }
 
-    // Optional: full profile update (for future use)
+    // Full profile update
     public function updateProfile(Request $request)
     {
         $admin = $request->user();
@@ -55,12 +57,12 @@ class AdminProfileController extends Controller
 
         if ($request->hasFile('profile_photo')) {
             $photo = $request->file('profile_photo');
-            $filename = time().'_'.$photo->getClientOriginalName();
+            $filename = time() . '_' . $photo->getClientOriginalName();
             $photo->storeAs('profile_photos', $filename, 'public');
 
             // Delete old photo
-            if ($admin->profile_photo && Storage::disk('public')->exists('profile_photos/'.$admin->profile_photo)) {
-                Storage::disk('public')->delete('profile_photos/'.$admin->profile_photo);
+            if ($admin->profile_photo && Storage::disk('public')->exists('profile_photos/' . $admin->profile_photo)) {
+                Storage::disk('public')->delete('profile_photos/' . $admin->profile_photo);
             }
 
             $admin->profile_photo = $filename;
@@ -75,7 +77,22 @@ class AdminProfileController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully.',
-            'admin' => $admin,
+            'admin' => $this->formatAdmin($admin),
         ]);
+    }
+
+    // Helper: format admin data with full profile photo URL
+    private function formatAdmin($admin)
+    {
+        return [
+            'id' => $admin->id,
+            'fullname' => $admin->fullname,
+            'phone' => $admin->phone,
+            'gender' => $admin->gender,
+            'birthdate' => $admin->birthdate,
+            'profile_photo' => $admin->profile_photo
+                ? asset('storage/profile_photos/' . $admin->profile_photo)
+                : null,
+        ];
     }
 }
