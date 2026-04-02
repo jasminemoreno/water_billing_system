@@ -10,17 +10,17 @@
       <ReportCard :icon="rejectPayment" title="Rejected Payments" color="#ef4444" @click="openPopup('rejected')" />
     </div>
 
-    <ReportPopup
-      v-if="popup.show"
-      :show="popup.show"
-      :title="popup.title"
-      :headers="popup.headers"
-      :keys="popup.keys"
-      :rows="popup.rows"
-      :customContent="popup.customContent"
-      :type="popup.type"
-      @close="popup.show = false"
-      @year-month-selected="handleDateFilter"
+    <ReportPopup 
+      v-if="popup.show" 
+      :show="popup.show" 
+      :title="popup.title" 
+      :headers="popup.headers" 
+      :keys="popup.keys" 
+      :rows="popup.rows" 
+      :customContent="popup.customContent" 
+      :type="popup.type" 
+      @close="popup.show = false" 
+      @year-month-selected="handleDateFilter" 
     />
   </div>
 </template>
@@ -30,8 +30,6 @@ import { ref, onMounted } from 'vue'
 import api from '@/api.js'
 import ReportCard from '@/components/admin/ReportCard.vue'
 import ReportPopup from '@/components/admin/ReportPopup.vue'
-
-// ICONS
 import billingIcon from '@/assets/icons/billing_reports.png'
 import paymentIcon from '@/assets/icons/payment_reports.png'
 import paymentHistoryIcon from '@/assets/icons/history.png'
@@ -40,14 +38,20 @@ import revenueIcon from '@/assets/icons/revenue.png'
 import billHistoryIcon from '@/assets/icons/bill_history.png'
 import rejectPayment from '@/assets/icons/rejected.png'
 
-// DATA REFS
 const bills = ref([])
 const payments = ref([])
 const unpaidBills = ref([])
 const monthlyRevenue = ref({})
-const popup = ref({ show: false, type: null, title: '', headers: [], keys: [], rows: [], customContent: null })
+const popup = ref({
+  show: false,
+  type: null,
+  title: '',
+  headers: [],
+  keys: [],
+  rows: [],
+  customContent: null
+})
 
-// INITIAL FETCH
 onMounted(async () => {
   const res = await api.get('/reports')
   bills.value = res.data.bills
@@ -56,40 +60,36 @@ onMounted(async () => {
   monthlyRevenue.value = res.data.monthlyRevenue
 })
 
-// OPEN POPUP
 const openPopup = (type) => {
   popup.value.type = type
   popup.value.show = true
   popup.value.rows = []
 
-  const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth() + 1
-
-  if (['bill-history', 'history', 'rejected'].includes(type)) {
-    popup.value.customContent = { type: 'year-month-select', selectedYear: currentYear, selectedMonth: currentMonth }
-  } else {
-    popup.value.customContent = null
-  }
-
-  switch (type) {
+  switch(type) {
     case 'bill-history':
       popup.value.title = 'Bill History'
       popup.value.headers = ['ID','Customer','Meter','Consumption','Total','Billing Date','Due Date','Disconnection Date','Status']
       popup.value.keys = ['id','customer','meter','consumption','total','billing_date','due_date','disconnection_date','status']
-      fetchBillHistory(currentYear, currentMonth)
-      break
+      popup.value.customContent = { type: 'year-month-select', selectedYear: new Date().getFullYear(), selectedMonth: new Date().getMonth() + 1 }
+      fetchBillHistory(popup.value.customContent.selectedYear, popup.value.customContent.selectedMonth)
+      break;
+
     case 'history':
       popup.value.title = 'Payment History'
       popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Status']
       popup.value.keys = ['id','customer','bill','amount','method','date','status']
-      fetchHistory(currentYear, currentMonth)
-      break
+      popup.value.customContent = { type: 'year-month-select', selectedYear: new Date().getFullYear(), selectedMonth: new Date().getMonth() + 1 }
+      fetchHistory(popup.value.customContent.selectedYear, popup.value.customContent.selectedMonth)
+      break;
+
     case 'rejected':
       popup.value.title = 'Rejected Payment History'
       popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Screenshot']
       popup.value.keys = ['id','customer','bill','amount','method','date','screenshot']
-      fetchRejectedPayments(currentYear, currentMonth)
-      break
+      popup.value.customContent = { type: 'year-month-select', selectedYear: new Date().getFullYear(), selectedMonth: new Date().getMonth() + 1 }
+      fetchRejectedPayments(popup.value.customContent.selectedYear, popup.value.customContent.selectedMonth)
+      break;
+
     case 'billing':
       popup.value.title = 'Billing Reports'
       popup.value.headers = ['ID','Customer','Meter','Consumption','Total','Billing Date','Status']
@@ -103,7 +103,8 @@ const openPopup = (type) => {
         billing_date: new Date(b.billing_date).toLocaleDateString(),
         status: b.payments.some(p => ['Approved','Verified'].includes(p.status)) ? 'Paid' : 'Unpaid'
       }))
-      break
+      break;
+
     case 'payment':
       popup.value.title = 'Payment Reports'
       popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Status']
@@ -117,7 +118,8 @@ const openPopup = (type) => {
         date: new Date(p.created_at).toLocaleDateString(),
         status: p.status
       }))
-      break
+      break;
+
     case 'unpaid':
       popup.value.title = 'Unpaid Bills'
       popup.value.headers = ['ID','Customer','Meter','Consumption','Total','Billing Date']
@@ -130,7 +132,8 @@ const openPopup = (type) => {
         total: Number(b.total).toFixed(2),
         billing_date: new Date(b.billing_date).toLocaleDateString()
       }))
-      break
+      break;
+
     case 'revenue':
       popup.value.title = 'Monthly Revenue'
       popup.value.headers = ['Month','Revenue']
@@ -139,11 +142,13 @@ const openPopup = (type) => {
         month: m,
         revenue: Number(total).toFixed(2)
       }))
-      break
+      break;
   }
 }
 
+// -------------------------
 // FETCH FUNCTIONS
+// -------------------------
 const fetchHistory = async (year, month) => {
   const res = await api.get(`/reports/payment-history/${year}/${month}`)
   popup.value.rows = res.data.payments
@@ -187,11 +192,13 @@ const fetchRejectedPayments = async (year, month) => {
   }))
 }
 
-// HANDLE YEAR-MONTH CHANGE
+// -------------------------
+// DATE FILTER HANDLER
+// -------------------------
 const handleDateFilter = (year, month) => {
-  if (popup.value.type === 'history') fetchHistory(year, month)
-  if (popup.value.type === 'bill-history') fetchBillHistory(year, month)
-  if (popup.value.type === 'rejected') fetchRejectedPayments(year, month)
+  if(popup.value.type === 'history') fetchHistory(year, month)
+  if(popup.value.type === 'bill-history') fetchBillHistory(year, month)
+  if(popup.value.type === 'rejected') fetchRejectedPayments(year, month)
 }
 </script>
 
