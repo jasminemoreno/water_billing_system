@@ -106,13 +106,22 @@ const openPopup = (type) => {
   // REJECTED PAYMENTS
   // -------------------------
   if (type === 'rejected') {
-    popup.value.title = 'Rejected Payment History'
-    popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Screenshot']
-    popup.value.keys = ['id','customer','bill','amount','method','date','screenshot']
-    popup.value.customContent = null
+  popup.value.title = 'Rejected Payment History'
+  popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Screenshot']
+  popup.value.keys = ['id','customer','bill','amount','method','date','screenshot']
 
-    fetchRejectedPayments()
+  // ✅ ADD THIS
+  popup.value.customContent = {
+    type: 'year-month-select',
+    selectedYear: new Date().getFullYear(),
+    selectedMonth: new Date().getMonth() + 1
   }
+
+  fetchRejectedPayments(
+    popup.value.customContent.selectedYear,
+    popup.value.customContent.selectedMonth
+  )
+}
 
   // -------------------------
   // BILLING REPORTS
@@ -214,11 +223,9 @@ const fetchBillHistory = async (year, month) => {
   }))
 }
 
-const fetchRejectedPayments = async () => {
-  const year = new Date().getFullYear();
-  const month = new Date().getMonth() + 1;
-
+const fetchRejectedPayments = async (year, month) => {
   const res = await api.get(`/reports/rejected-payments/${year}/${month}`)
+
   popup.value.rows = res.data.payments.map(p => ({
     id: p.id,
     customer: p.customer?.customer_name,
@@ -229,13 +236,13 @@ const fetchRejectedPayments = async () => {
     screenshot: p.gcash_screenshot
   }))
 }
-
 // -------------------------
 // DATE FILTER HANDLER
 // -------------------------
 const handleDateFilter = (year, month) => {
   if (popup.value.type === 'history') fetchHistory(year, month)
   if (popup.value.type === 'bill-history') fetchBillHistory(year, month)
+  if (popup.value.type === 'rejected') fetchRejectedPayments(year, month) // ✅ ADD THIS
 }
 </script>
 
