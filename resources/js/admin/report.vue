@@ -30,6 +30,7 @@ import { ref, onMounted } from 'vue'
 import api from '@/api.js'
 import ReportCard from '@/components/admin/ReportCard.vue'
 import ReportPopup from '@/components/admin/ReportPopup.vue'
+
 import billingIcon from '@/assets/icons/billing_reports.png'
 import paymentIcon from '@/assets/icons/payment_reports.png'
 import paymentHistoryIcon from '@/assets/icons/history.png'
@@ -52,6 +53,9 @@ const popup = ref({
   customContent: null
 })
 
+// -------------------------
+// LOAD DATA
+// -------------------------
 onMounted(async () => {
   const res = await api.get('/reports')
   bills.value = res.data.bills
@@ -60,12 +64,18 @@ onMounted(async () => {
   monthlyRevenue.value = res.data.monthlyRevenue
 })
 
+// -------------------------
+// OPEN POPUP
+// -------------------------
 const openPopup = (type) => {
   popup.value.type = type
   popup.value.show = true
   popup.value.rows = []
 
   switch(type) {
+    // -------------------------
+    // BILL HISTORY - MONTHLY
+    // -------------------------
     case 'bill-history':
       popup.value.title = 'Bill History'
       popup.value.headers = ['ID','Customer','Meter','Consumption','Total','Billing Date','Due Date','Disconnection Date','Status']
@@ -74,6 +84,9 @@ const openPopup = (type) => {
       fetchBillHistory(popup.value.customContent.selectedYear, popup.value.customContent.selectedMonth)
       break;
 
+    // -------------------------
+    // PAYMENT HISTORY - MONTHLY
+    // -------------------------
     case 'history':
       popup.value.title = 'Payment History'
       popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Status']
@@ -82,6 +95,9 @@ const openPopup = (type) => {
       fetchHistory(popup.value.customContent.selectedYear, popup.value.customContent.selectedMonth)
       break;
 
+    // -------------------------
+    // REJECTED PAYMENTS - MONTHLY
+    // -------------------------
     case 'rejected':
       popup.value.title = 'Rejected Payment History'
       popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Screenshot']
@@ -90,54 +106,70 @@ const openPopup = (type) => {
       fetchRejectedPayments(popup.value.customContent.selectedYear, popup.value.customContent.selectedMonth)
       break;
 
+    // -------------------------
+    // BILLING REPORT - ALL BILLS
+    // -------------------------
     case 'billing':
       popup.value.title = 'Billing Reports'
       popup.value.headers = ['ID','Customer','Meter','Consumption','Total','Billing Date','Status']
       popup.value.keys = ['id','customer','meter','consumption','total','billing_date','status']
+      popup.value.customContent = null // NO month/year
       popup.value.rows = bills.value.map(b => ({
         id: b.id,
         customer: b.customer?.customer_name,
         meter: b.meter_no,
         consumption: b.consumption,
         total: Number(b.total).toFixed(2),
-        billing_date: new Date(b.billing_date).toLocaleDateString(),
+        billing_date: new Date(b.billing_date).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}),
         status: b.payments.some(p => ['Approved','Verified'].includes(p.status)) ? 'Paid' : 'Unpaid'
       }))
       break;
 
+    // -------------------------
+    // PAYMENT REPORT - ALL PAYMENTS
+    // -------------------------
     case 'payment':
       popup.value.title = 'Payment Reports'
       popup.value.headers = ['ID','Customer','Bill','Amount','Method','Date','Status']
       popup.value.keys = ['id','customer','bill','amount','method','date','status']
+      popup.value.customContent = null // NO month/year
       popup.value.rows = payments.value.map(p => ({
         id: p.id,
         customer: p.customer?.customer_name,
         bill: p.bill_id,
         amount: Number(p.amount).toFixed(2),
         method: p.payment_method,
-        date: new Date(p.created_at).toLocaleDateString(),
+        date: new Date(p.created_at).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}),
         status: p.status
       }))
       break;
 
+    // -------------------------
+    // UNPAID BILLS
+    // -------------------------
     case 'unpaid':
       popup.value.title = 'Unpaid Bills'
       popup.value.headers = ['ID','Customer','Meter','Consumption','Total','Billing Date']
       popup.value.keys = ['id','customer','meter','consumption','total','billing_date']
+      popup.value.customContent = null
       popup.value.rows = unpaidBills.value.map(b => ({
         id: b.id,
         customer: b.customer?.customer_name,
         meter: b.meter_no,
         consumption: b.consumption,
         total: Number(b.total).toFixed(2),
-        billing_date: new Date(b.billing_date).toLocaleDateString()
+        billing_date: new Date(b.billing_date).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})
       }))
       break;
 
+    // -------------------------
+    // MONTHLY REVENUE
+    // -------------------------
     case 'revenue':
       popup.value.title = 'Monthly Revenue'
       popup.value.headers = ['Month','Revenue']
       popup.value.keys = ['month','revenue']
+      popup.value.customContent = null
       popup.value.rows = Object.entries(monthlyRevenue.value).map(([m, total]) => ({
         month: m,
         revenue: Number(total).toFixed(2)
@@ -147,7 +179,7 @@ const openPopup = (type) => {
 }
 
 // -------------------------
-// FETCH FUNCTIONS
+// FETCH FUNCTIONS FOR MONTHLY REPORTS
 // -------------------------
 const fetchHistory = async (year, month) => {
   const res = await api.get(`/reports/payment-history/${year}/${month}`)
@@ -159,7 +191,7 @@ const fetchHistory = async (year, month) => {
       bill: p.bill_id,
       amount: Number(p.amount).toFixed(2),
       method: p.payment_method,
-      date: new Date(p.created_at).toLocaleDateString(),
+      date: new Date(p.created_at).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}),
       status: 'Paid'
     }))
 }
@@ -172,9 +204,9 @@ const fetchBillHistory = async (year, month) => {
     meter: b.meter_no,
     consumption: b.consumption,
     total: Number(b.total).toFixed(2),
-    billing_date: new Date(b.billing_date).toLocaleDateString(),
-    due_date: new Date(b.due_date).toLocaleDateString(),
-    disconnection_date: b.disconnection_date ? new Date(b.disconnection_date).toLocaleDateString() : '',
+    billing_date: new Date(b.billing_date).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}),
+    due_date: new Date(b.due_date).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}),
+    disconnection_date: b.disconnection_date ? new Date(b.disconnection_date).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) : '',
     status: b.payments.some(p => ['Approved','Verified'].includes(p.status)) ? 'Paid' : 'Unpaid'
   }))
 }
@@ -187,13 +219,13 @@ const fetchRejectedPayments = async (year, month) => {
     bill: p.bill_id,
     amount: Number(p.amount).toFixed(2),
     method: p.payment_method,
-    date: new Date(p.created_at).toLocaleDateString(),
+    date: new Date(p.created_at).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}),
     screenshot: p.gcash_screenshot
   }))
 }
 
 // -------------------------
-// DATE FILTER HANDLER
+// HANDLE MONTH/YEAR FILTER
 // -------------------------
 const handleDateFilter = (year, month) => {
   if(popup.value.type === 'history') fetchHistory(year, month)
