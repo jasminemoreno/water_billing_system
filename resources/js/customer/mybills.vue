@@ -51,7 +51,7 @@ const rows = computed(() =>
     id: b.id,
     meter_no: b.meter_no,
     consumption: b.consumption + ' m³',
-    total: '₱' + Number(b.total ?? 0).toFixed(2),
+    total: Number(b.total),
     billing_date: dayjs(b.billing_date).format('MMM DD, YYYY'),
     due_date: dayjs(b.due_date).format('MMM DD, YYYY'),
     status: b.status === 'Rejected' ? 'Unpaid' : b.status

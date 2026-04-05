@@ -47,8 +47,15 @@
         <label>Disconnection Date:</label>
         <input type="date" v-model="form.disconnection_date" readonly>
 
+        <!-- WARNING MESSAGE -->
+        <p v-if="duplicateWarning" class="warning">
+          ⚠️ This customer already has a bill for this month!
+        </p>
+
         <div class="button-group">
-          <button type="submit">{{ mode === 'add' ? 'Save' : 'Update' }}</button>
+          <button type="submit" :disabled="duplicateWarning">
+            {{ mode === 'add' ? 'Save' : 'Update' }}
+          </button>
           <button type="button" class="close-btn" @click="$emit('close')">Cancel</button>
         </div>
 
@@ -59,11 +66,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   form: Object,
   customers: Array,
+  bills: Array,   // <-- bills prop needed for duplicate check
   mode: String
 })
 
@@ -73,6 +81,7 @@ const form = props.form
 const customerSearch = ref('')
 const filteredCustomers = ref([])
 
+// FILTER CUSTOMERS
 function filterCustomers() {
   const q = customerSearch.value.toLowerCase()
   filteredCustomers.value = props.customers.filter(c =>
@@ -80,6 +89,7 @@ function filterCustomers() {
   )
 }
 
+// SELECT CUSTOMER
 function selectCustomer(c) {
   form.customer_id = c.id
   form.customer_name = c.customer_name
@@ -89,25 +99,42 @@ function selectCustomer(c) {
   filteredCustomers.value = []
 }
 
+// CALCULATE TOTAL
 function calculateTotal() {
   form.total = (form.consumption || 0) * 10
 }
 
-// Automatically calculate due and disconnection dates
+// DATES
 function setDates() {
   if (!form.billing_date) return
 
   const billDate = new Date(form.billing_date)
   const dueDate = new Date(billDate)
-  dueDate.setDate(dueDate.getDate() + 7)      // 7 days after billing
+  dueDate.setDate(dueDate.getDate() + 7)
   const disconnectDate = new Date(dueDate)
-  disconnectDate.setDate(disconnectDate.getDate() + 5) // 5 days after due
+  disconnectDate.setDate(disconnectDate.getDate() + 5)
 
   form.due_date = dueDate.toISOString().split('T')[0]
   form.disconnection_date = disconnectDate.toISOString().split('T')[0]
 }
 
+// CHECK DUPLICATE BILL FOR SAME MONTH
+const duplicateWarning = computed(() => {
+  if (!form.customer_id || !form.billing_date) return false
+
+  const billMonth = new Date(form.billing_date).getMonth()
+  const billYear = new Date(form.billing_date).getFullYear()
+
+  return props.bills.some(b => {
+    if (b.customer_id !== form.customer_id) return false
+    const bDate = new Date(b.billing_date)
+    return bDate.getMonth() === billMonth && bDate.getFullYear() === billYear
+  })
+})
+
+// SUBMIT
 function handleSubmit() {
+  if (duplicateWarning.value) return // prevent saving
   emit('save', { ...form })
 }
 </script>
@@ -168,5 +195,10 @@ function handleSubmit() {
 }
 .result-item:hover {
   background: #f1faff;
+}
+.warning {
+  color: red;
+  font-size: 13px;
+  margin-top: 6px;
 }
 </style>
