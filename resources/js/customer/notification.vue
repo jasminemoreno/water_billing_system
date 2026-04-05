@@ -23,7 +23,7 @@
   <script setup>
   import { ref, onMounted } from 'vue'
   import api from '@/customerApi' // Axios instance with customer token
-  import NotificationItem from '@/components/customer/notification/NotificationItem.vue'
+  import NotificationItem from '@/components/customer/NotificationItem.vue'
   
   const notifications = ref([])
   
