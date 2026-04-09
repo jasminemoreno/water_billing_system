@@ -62,8 +62,7 @@ class ReportController extends Controller
             'payments'=>$payments
         ]);
     }
-
-    public function billHistoryByMonth($year, $month)
+        public function billHistoryByMonth($year, $month)
     {
        $bills = Bill::withTrashed()
             ->with(['customer', 'payments'])
@@ -76,34 +75,23 @@ class ReportController extends Controller
         return response()->json([
             'bills'=>$bills
         ]);
+        
+
     }
 
-    public function rejectedPaymentsByMonth($year, $month)
-    {
-        $payments = Payment::withTrashed()
+public function rejectedPaymentsByMonth($year, $month)
+{
+  $payments = Payment::withTrashed()
+    ->with('customer')
+    ->where('status', 'Rejected')
+    ->whereYear('created_at', $year)
+    ->whereMonth('created_at', $month)
+    ->get();
 
-            ->with(['customer','bill'])
-            ->whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
-            ->where('status', 'Rejected') // 🔥 ONLY REJECTED
-            ->orderByDesc('created_at')
-            ->get();
+    return response()->json([
+        'payments' => $payments
+    ]);
+}
 
-        return response()->json([
-            'payments' => $payments
-        ]);
-    }
 
-    public function unpaidBills($year, $month)
-    {
-        $unpaidBills = Bill::with('customer')
-            ->where('status', 'Unpaid')
-            ->whereYear('billing_date', $year)
-            ->whereMonth('billing_date', $month)
-            ->get();
-
-        return response()->json([
-            'unpaidBills' => $unpaidBills
-        ]);
-    }
 }

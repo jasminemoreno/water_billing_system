@@ -35,7 +35,7 @@
   import api from '@/customerApi'
   
   // ✅ Import ConfirmModal
-  import ConfirmModal from '@/components/customer/notification/ConfirmModal.vue'
+  import ConfirmModal from '@/components/customer/ConfirmModal.vue'
   
   // Props & emits
   const props = defineProps({ note: Object })

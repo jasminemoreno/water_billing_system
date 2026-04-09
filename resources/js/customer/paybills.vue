@@ -2,11 +2,15 @@
   <div class="pay-bills-page">
     <h2>Pay Bills</h2>
 
-    <PayBillsTable
-      :bills="bills"
+    <!-- ✅ Use reusable CustomerTable -->
+    <CustomerTable
+      :columns="columns"
+      :rows="rows"
+      :hasPay="true"
       @pay="openModal"
     />
 
+    <!-- Payment Details -->
     <div class="payment-details-card">
       <h3>Payment Details</h3>
       <p><strong>GCash Number:</strong> 09XXXXXXXXX</p>
@@ -14,6 +18,7 @@
       <p>Upload screenshot during payment.</p>
     </div>
 
+    <!-- Payment Modal -->
     <PaymentModal
       :show="showModal"
       :bill="selectedBill"
@@ -21,6 +26,7 @@
       @submitted="onPaymentSuccess"
     />
 
+    <!-- Success Popup -->
     <SuccessPopup
       :show="showSuccess"
       message="Payment submitted successfully! Awaiting admin approval."
@@ -30,42 +36,66 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
+import { ref, computed, onMounted } from "vue"
 import api from "@/customerApi"
-import PayBillsTable from "@/components/customer/paybill/PayBillsTable.vue"
-import PaymentModal from "@/components/customer/paybill/PaymentPopup.vue"
-import SuccessPopup from "@/components/customer/paybill/SuccessPopup.vue"
+import CustomerTable from "@/components/customer/table.vue"
+import PaymentModal from "@/components/customer/PaymentPopup.vue"
+import SuccessPopup from "@/components/customer/SuccessPopup.vue"
+import dayjs from "dayjs"
 
 const bills = ref([])
 const showModal = ref(false)
 const selectedBill = ref(null)
 const showSuccess = ref(false)
 
+// ✅ Fetch bills
 const fetchBills = async () => {
   try {
     const res = await api.get("/customer/paybills")
+
     bills.value = (res.data || []).filter(
-      b => b.status === 'Unpaid' || b.status === 'Pending'
+      b => b.status === "Unpaid" || b.status === "Pending"
     )
   } catch (err) {
     console.error("Failed to load bills", err)
   }
 }
 
+onMounted(fetchBills)
+
+// ✅ Columns handled by parent
+const columns = [
+  { label: "Bill ID", field: "id" },
+  { label: "Month", field: "month" },
+  { label: "Amount", field: "total" },
+  { label: "Status", field: "status" }
+]
+
+// ✅ Rows formatted by parent
+const rows = computed(() =>
+  bills.value.map(b => ({
+    id: b.id,
+    month: dayjs(b.billing_date).format("MMMM YYYY"),
+    total: Number(b.total),
+    status: b.status
+  }))
+)
+
+// ✅ Actions
 const openModal = (bill) => {
   selectedBill.value = bill
   showModal.value = true
 }
 
-const closeModal = () => showModal.value = false
+const closeModal = () => {
+  showModal.value = false
+}
 
 const onPaymentSuccess = () => {
   closeModal()
   showSuccess.value = true
   fetchBills()
 }
-
-onMounted(() => fetchBills())
 </script>
 
 <style scoped>

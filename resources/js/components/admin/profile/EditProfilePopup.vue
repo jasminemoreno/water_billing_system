@@ -33,14 +33,16 @@
 
 <script setup>
 import { reactive, watch } from 'vue';
-import api from '@/api.js'; // use api.js
+import api from '@/api.js'; // axios instance
 
+// Props & emits
 const props = defineProps({
   visible: Boolean,
   admin: Object
 });
 const emit = defineEmits(['close', 'success']);
 
+// Form state
 const form = reactive({
   fullname: '',
   phone: '',
@@ -49,6 +51,7 @@ const form = reactive({
   profile_photo: null
 });
 
+// Watch admin prop and populate form
 watch(() => props.admin, (newAdmin) => {
   form.fullname = newAdmin.fullname || '';
   form.phone = newAdmin.phone || '';
@@ -57,10 +60,12 @@ watch(() => props.admin, (newAdmin) => {
   form.profile_photo = null;
 }, { immediate: true });
 
+// Handle file upload
 const handleFileUpload = (e) => {
   form.profile_photo = e.target.files[0];
 };
 
+// Update profile
 const updateProfile = async () => {
   const data = new FormData();
   data.append('fullname', form.fullname);
@@ -70,8 +75,18 @@ const updateProfile = async () => {
   if (form.profile_photo) data.append('profile_photo', form.profile_photo);
 
   try {
-    const response = await api.post('/admin/profile/update', data); // cookie auth
-    emit('success', response.data.message || 'Profile updated successfully', response.data.admin);
+    const response = await api.post('/admin/profile/update', data);
+
+    // Make sure profile_photo is a full URL
+    const updatedAdmin = response.data.admin;
+    updatedAdmin.profile_photo = updatedAdmin.profile_photo
+      ? updatedAdmin.profile_photo.startsWith('http')
+        ? updatedAdmin.profile_photo
+        : `/storage/profile_photos/${updatedAdmin.profile_photo}`
+      : null;
+
+    // Emit updated info to parent & Navbar
+    emit('success', response.data.message || 'Profile updated successfully', updatedAdmin);
     emit('close');
   } catch (error) {
     console.error(error);

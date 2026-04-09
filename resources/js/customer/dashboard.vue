@@ -34,9 +34,9 @@ import { ref, onMounted } from 'vue'
 import customerApi from '@/customerApi'
 
 // Components
-import DashboardCards from '@/components/customer/dashboard/DashboardCards.vue'
-import Notifications from '@/components/customer/dashboard/Notifications.vue'
-import WaterUsageChart from '@/components/customer/dashboard/WaterUsageChart.vue'
+import DashboardCards from '@/components/customer/DashboardCards.vue'
+import Notifications from '@/components/customer/Notifications.vue'
+import WaterUsageChart from '@/components/customer/WaterUsageChart.vue'
 
 // State
 const currentBill = ref(null)
