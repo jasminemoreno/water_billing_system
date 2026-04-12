@@ -69,7 +69,7 @@
   left: 0;
   width: 250px;
   height: 100vh;
-  background-color: #0f4c75;
+  background-color: #2872A1;
   color: white;
   display: flex;
   flex-direction: column;

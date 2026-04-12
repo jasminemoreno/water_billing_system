@@ -90,7 +90,7 @@ export default {
 /* Navbar */
 .navbar {
   height: 65px;
-  background: white;
+  background: #CBDDE9;
   padding: 0 25px;
   display: flex;
   align-items: center;

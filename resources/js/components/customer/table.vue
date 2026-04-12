@@ -89,11 +89,11 @@
     font-size: 14px;
   }
   .data-table th {
-    background-color: #0f4c75; color: white; text-transform: uppercase; font-size: 13px;
+    background-color: #2872A1; color: white; text-transform: uppercase; font-size: 13px;
   }
   .data-table tr:hover { background-color: #f1faff; transition: 0.2s; }
   .pay-btn {
-    padding: 6px 12px; background-color: #007bff; color: white;
+    padding: 6px 12px; background-color: #2872A1; color: white;
     border-radius: 6px; font-size: 14px; font-weight: 500;
     border: none; cursor: pointer; transition: all 0.2s ease-in-out;
   }

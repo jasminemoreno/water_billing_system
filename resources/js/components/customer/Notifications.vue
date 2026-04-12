@@ -62,8 +62,8 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   
-  .notification-item.yellow { border-color: #f1c40f; background-color: #fffbe6; }
-  .notification-item.blue { border-color: #3498db; background-color: #e6f0ff; }
+  .notification-item.yellow { border-color: #B2965F; background-color: #FFEDCD; }
+  .notification-item.blue { border-color: #075B93; background-color: #B4EEF2; }
   
   .notification-item .title { font-weight: 600; color: #2c3e50; margin-bottom: 4px; }
   .notification-item .desc { font-size: 0.9rem; color: #2c3e50; line-height: 1.3; }

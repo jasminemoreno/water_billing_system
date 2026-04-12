@@ -82,7 +82,7 @@
   .notification-item {
     display: flex;
     align-items: flex-start;
-    background-color: #fff;
+    background-color: #F7F7F7;
     padding: 18px 22px;
     border-radius: 12px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.08);
@@ -91,7 +91,7 @@
   }
   
   .notification-item.unread {
-    background-color: #f0f8ff;
+    background-color: #F7F7F7;
     border-left: 5px solid #007bff;
   }
   

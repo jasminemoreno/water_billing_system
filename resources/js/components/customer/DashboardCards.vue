@@ -82,9 +82,9 @@ const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '
   box-shadow: 0 12px 30px rgba(0,0,0,0.15);
 }
 
-.currentbill { border-top-color: #e74c3c; background-color: #ffe6e6; }
-.last-payment { border-top-color: #27ae60; background-color: #e6ffe6; }
-.water-usage { border-top-color: #3498db; background-color: #e6f0ff; }
+.currentbill { border-top-color: #081566; background-color: #9BBCD4; }
+.last-payment { border-top-color: #075B93; background-color: #B4EEF2; }
+.water-usage { border-top-color: #B2965F; background-color: #FFEDCD; }
 
 .card h3 {
   font-size: 1.3rem;

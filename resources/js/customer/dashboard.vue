@@ -70,7 +70,7 @@ onMounted(async () => {
   margin-left: 250px;
   padding: 80px 30px 30px 30px;
   min-height: 100vh;
-  background-color: #f4f6f8;
+  background-color: #CBDDE9;
   overflow-y: auto; /* make scrollable if content grows */
 }
 
