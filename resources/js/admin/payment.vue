@@ -1,127 +1,148 @@
 <template>
   <div class="payment-page">
+
+    <!-- TABLE -->
     <PaymentTable
       :rows="formattedPayments"
       :columns="columns"
       v-model:searchQuery="searchQuery"
-      @delete="deletePayment"
-      @view="viewPayment"
       :hasEdit="false"
       :hasDelete="true"
       :hasView="true"
-      :actionOrder="['view','delete']"
+      @delete="deletePayment"
+      @view="viewPayment"
     />
 
+    <!-- ADD BUTTON (optional hidden or removed if not needed) -->
     <button class="add-btn" @click="openAdd">+</button>
 
+    <!-- FORM (VIEW ONLY / NO EDIT MODE HERE) -->
     <PaymentForm
       v-if="popupVisible"
       :mode="popupMode"
       :payment="currentPayment"
       :customers="customers"
       :bills="bills"
-      @saved="handleSaved"
-      @close="popupVisible=false"
+      @close="popupVisible = false"
       @verify="verifyPayment"
       @reject="rejectPayment"
     />
 
-    <!-- Delete confirmation popup -->
-    <div v-if="confirmDeletePopup" class="payment-success-popup">
-      <div class="payment-success-popup-content">
-        <p>Do you really want to delete this payment?</p>
-        <div class="popup-btns">
-          <button class="payment-close-btn" @click="confirmDelete">Yes</button>
-          <button class="payment-close-btn cancel-btn" @click="cancelDelete">Cancel</button>
+    <!-- DELETE CONFIRM POPUP -->
+    <div v-if="confirmDeletePopup" class="popup-overlay">
+      <div class="popup-box">
+
+        <p class="popup-title">Delete this payment?</p>
+        <p class="popup-sub">This action cannot be undone.</p>
+
+        <div class="popup-actions">
+          <button class="btn-danger" @click="confirmDelete">
+            Yes, Delete
+          </button>
+
+          <button class="btn-secondary" @click="cancelDelete">
+            Cancel
+          </button>
         </div>
+
       </div>
     </div>
 
-    <!-- Success popup -->
+    <!-- SUCCESS -->
     <SuccessPopup
       v-if="showSuccess"
       :message="successMessage"
-      @close="showSuccess=false"
+      @close="showSuccess = false"
     />
+
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
-import api from '@/api'
-import PaymentTable from '@/components/admin/Table.vue'
-import PaymentForm from '@/components/admin/PaymentForm.vue'
-import SuccessPopup from '@/components/admin/SuccessPopup.vue'
+import { ref, reactive, computed } from "vue"
+import api from "@/api"
+import { usePolling } from "@/polling"
 
+import PaymentTable from "@/components/admin/Table.vue"
+import PaymentForm from "@/components/admin/PaymentForm.vue"
+import SuccessPopup from "@/components/admin/SuccessPopup.vue"
+
+// DATA
 const payments = ref([])
 const customers = ref([])
 const bills = ref([])
-const searchQuery = ref('')
 
+const searchQuery = ref("")
 const popupVisible = ref(false)
-const popupMode = ref('add')
+const popupMode = ref("view")
+
 const showSuccess = ref(false)
-const successMessage = ref('')
+const successMessage = ref("")
 
 const confirmDeletePopup = ref(false)
 const paymentToDelete = ref(null)
 
-const newPaymentTemplate = {
+// CURRENT ITEM
+const currentPayment = reactive({
   id: null,
   customer_id: null,
   bill_id: null,
-  meter_no: '',
+  meter_no: "",
   amount: 0,
-  payment_method: 'Cash',
-  status: 'Pending'
-}
-
-const currentPayment = reactive({ ...newPaymentTemplate })
-
-const columns = [
-  { label: 'Payment ID', field: 'id' },
-  { label: 'Customer Name', field: 'customer_name' },
-  { label: 'Bill ID', field: 'bill_id' },
-  { label: 'Meter No', field: 'meter_no' },
-  { label: 'Amount (₱)', field: 'amount' },
-  { label: 'Payment Method', field: 'payment_method' },
-  { label: 'Status', field: 'status' },
-]
-
-onMounted(async () => {
-  await loadCustomers()
-  await loadBills()
-  await loadPayments()
+  payment_method: "Cash",
+  status: "Pending",
 })
 
-async function loadCustomers() { customers.value = (await api.get('/customers')).data }
-async function loadBills() { bills.value = (await api.get('/bills')).data }
-async function loadPayments() { payments.value = (await api.get('/payments')).data }
+// TABLE COLUMNS (NO EDIT COLUMN)
+const columns = [
+  { label: "Payment ID", field: "id" },
+  { label: "Customer Name", field: "customer_name" },
+  { label: "Bill ID", field: "bill_id" },
+  { label: "Meter No", field: "meter_no" },
+  { label: "Amount", field: "amount" },
+  { label: "Method", field: "payment_method" },
+  { label: "Status", field: "status" },
+]
 
-const formattedPayments = computed(() => payments.value.map(p => ({
-  ...p,
-  customer_name: customers.value.find(c => c.id === p.customer_id)?.customer_name || ''
-})))
-
-function openAdd() {
-  Object.assign(currentPayment, { ...newPaymentTemplate })
-  popupMode.value = 'add'
-  popupVisible.value = true
+// FETCH FUNCTIONS
+const loadPayments = async () => {
+  payments.value = (await api.get("/payments")).data
 }
 
+const loadCustomers = async () => {
+  customers.value = (await api.get("/customers")).data
+}
+
+const loadBills = async () => {
+  bills.value = (await api.get("/bills")).data
+}
+
+// POLLING (REAL TIME UPDATE)
+const fetchAll = async () => {
+  await loadPayments()
+  await loadCustomers()
+  await loadBills()
+}
+
+usePolling(fetchAll, 5000)
+
+// FORMAT TABLE DATA
+const formattedPayments = computed(() =>
+  payments.value.map(p => ({
+    ...p,
+    customer_name:
+      customers.value.find(c => c.id === p.customer_id)?.customer_name || ""
+  }))
+)
+
+// VIEW ONLY
 function viewPayment(payment) {
   Object.assign(currentPayment, payment)
-  popupMode.value = 'view'
+  popupMode.value = "view"
   popupVisible.value = true
 }
 
-async function handleSaved(message, newPayment) {
-  if(newPayment) payments.value.push(newPayment)
-  successMessage.value = message
-  showSuccess.value = true
-  popupVisible.value = false
-}
-
+// DELETE FLOW
 function deletePayment(payment) {
   paymentToDelete.value = payment
   confirmDeletePopup.value = true
@@ -129,9 +150,10 @@ function deletePayment(payment) {
 
 async function confirmDelete() {
   await api.delete(`/payments/${paymentToDelete.value.id}`)
-  payments.value = payments.value.filter(p => p.id !== paymentToDelete.value.id)
-  successMessage.value = 'Payment deleted successfully!'
+
+  successMessage.value = "Payment deleted successfully!"
   showSuccess.value = true
+
   confirmDeletePopup.value = false
   paymentToDelete.value = null
 }
@@ -141,56 +163,105 @@ function cancelDelete() {
   paymentToDelete.value = null
 }
 
-// Verify / Reject
+// OPTIONAL (if needed)
+function openAdd() {
+  popupMode.value = "view"
+  popupVisible.value = false
+}
+
+// VERIFY / REJECT
 async function verifyPayment(payment) {
-  try {
-    const res = await api.post(`/payments/${payment.id}/verify`)
-    const index = payments.value.findIndex(p => p.id === payment.id)
-    if (index !== -1) payments.value[index] = res.data.payment
-
-    // Close the PaymentForm popup
-    popupVisible.value = false
-
-    // Show SuccessPopup
-    successMessage.value = 'Payment verified successfully!'
-    showSuccess.value = true
-  } catch (err) {
-    console.error(err)
-  }
+  await api.post(`/payments/${payment.id}/verify`)
+  popupVisible.value = false
+  successMessage.value = "Payment verified!"
+  showSuccess.value = true
 }
 
 async function rejectPayment(payment) {
-  try {
-    const res = await api.post(`/payments/${payment.id}/reject`)
-    const index = payments.value.findIndex(p => p.id === payment.id)
-    if (index !== -1) payments.value[index] = res.data.payment
-
-    // Close the PaymentForm popup
-    popupVisible.value = false
-
-    // Show SuccessPopup
-    successMessage.value = 'Payment rejected successfully!'
-    showSuccess.value = true
-  } catch (err) {
-    console.error(err)
-  }
+  await api.post(`/payments/${payment.id}/reject`)
+  popupVisible.value = false
+  successMessage.value = "Payment rejected!"
+  showSuccess.value = true
 }
 </script>
 
 <style scoped>
-.payment-page { margin-left: 250px; padding: 80px 30px 30px; min-height: 100vh; background-color: #f4f6f8; }
-.add-btn {
-  position: fixed; bottom: 30px; right: 30px; width: 55px; height: 55px;
-  font-size: 26px; background-color: #007bff; color: white; border: none;
-  border-radius: 50%; cursor: pointer; display: flex; justify-content:center; align-items:center;
+.payment-page {
+  margin-left: 250px;
+  padding: 80px 30px;
+  min-height: 100vh;
+  background: #f4f6f8;
 }
-.add-btn:hover { background-color: #00a0ff; transform: scale(1.05); transition: 0.2s; }
-.payment-success-popup { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.4); display:flex; justify-content:center; align-items:center; z-index:9999; }
-.payment-success-popup-content { background:white; padding:30px 40px; border-radius:15px; text-align:center; box-shadow:0 8px 25px rgba(0,0,0,0.2); min-width:280px; }
-.payment-success-popup-content p { font-size:17px; color:#333; font-weight:500; }
-.popup-btns { display:flex; justify-content:center; gap:15px; margin-top:15px; }
-.payment-close-btn { padding:10px 20px; border:none; border-radius:8px; background-color:#007bff; color:white; cursor:pointer; }
-.payment-close-btn:hover { background-color:#0069d9; }
-.cancel-btn { background-color:#6c757d; }
-.cancel-btn:hover { background-color:#5a6268; }
+
+/* FLOAT BUTTON (OPTIONAL) */
+.add-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background: #007bff;
+  color: white;
+  font-size: 26px;
+  border: none;
+}
+
+/* DELETE POPUP OVERLAY */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* POPUP BOX */
+.popup-box {
+  background: white;
+  padding: 25px 30px;
+  border-radius: 12px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.popup-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.popup-sub {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* BUTTONS */
+.popup-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.btn-danger {
+  flex: 1;
+  padding: 10px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
+
+.btn-secondary {
+  flex: 1;
+  padding: 10px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
 </style>
