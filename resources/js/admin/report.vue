@@ -182,7 +182,7 @@ const openPopup = (type) => {
 // FETCH FUNCTIONS FOR MONTHLY REPORTS
 // -------------------------
 const fetchHistory = async (year, month) => {
-  const res = await api.get(/reports/payment-history/${year}/${month})
+  const res = await api.get(`/reports/payment-history/${year}/${month}`)
   popup.value.rows = res.data.payments
     .filter(p => ['Approved','Verified'].includes(p.status))
     .map(p => ({
@@ -197,7 +197,7 @@ const fetchHistory = async (year, month) => {
 }
 
 const fetchBillHistory = async (year, month) => {
-  const res = await api.get(/reports/bill-history/${year}/${month})
+  const res = await api.get(`/reports/bill-history/${year}/${month}`)
   popup.value.rows = res.data.bills.map(b => ({
     id: b.id,
     customer: b.customer?.customer_name,
@@ -212,7 +212,7 @@ const fetchBillHistory = async (year, month) => {
 }
 
 const fetchRejectedPayments = async (year, month) => {
-  const res = await api.get(/reports/rejected-payments/${year}/${month})
+  const res = await api.get(`/reports/rejected-payments/${year}/${month}`)
   popup.value.rows = res.data.payments.map(p => ({
     id: p.id,
     customer: p.customer?.customer_name,
