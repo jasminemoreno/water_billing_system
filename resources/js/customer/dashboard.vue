@@ -28,7 +28,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import { usePolling } from '@/polling'
 
 // API
 import customerApi from '@/customerApi'
@@ -45,7 +46,7 @@ const chartLabels = ref([])
 const chartData = ref([])
 const chartColors = ref([])
 
-onMounted(async () => {
+const fetchDashboard = async () => {
   try {
     const res = await customerApi.get('/customer/dashboardData')
 
@@ -57,12 +58,12 @@ onMounted(async () => {
 
   } catch (error) {
     console.error('Dashboard fetch error:', error)
-    if (error.response?.status === 401) {
-      sessionStorage.removeItem("customerToken")
-      window.location.href = "/customer/login"
-    }
   }
-})
+}
+
+usePolling(fetchDashboard, 8000)
+    
+
 </script>
 
 <style scoped>

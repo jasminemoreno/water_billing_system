@@ -22,6 +22,7 @@
   
   <script setup>
   import { ref, onMounted } from 'vue'
+  import { usePolling } from '@/polling'
   import api from '@/customerApi' // Axios instance with customer token
   import NotificationItem from '@/components/customer/NotificationItem.vue'
   
@@ -53,9 +54,7 @@
     }
   }
   
-  onMounted(() => {
-    fetchNotifications()
-  })
+  usePolling(fetchNotifications, 5000)
   </script>
   
   <style scoped>

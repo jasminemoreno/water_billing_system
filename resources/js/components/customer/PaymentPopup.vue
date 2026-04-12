@@ -1,67 +1,79 @@
 <template>
-  <div v-if="show" class="modal">
-    <div class="modal-content">
-      <span class="close" @click="$emit('close')">&times;</span>
+  <div v-if="show" class="modal" @click.self="closeModal">
+    <div class="modal-content" @click.stop>
+
+      <span class="close" @click="closeModal">&times;</span>
 
       <div class="modal-header">
         <i class="fas fa-money-bill-wave fa-2x" style="color:#0f4c75;"></i>
         <h3>Pay Bill</h3>
+
         <p v-if="isPending">This payment is pending for approval.</p>
         <p v-else>Upload your payment screenshot after sending the payment.</p>
       </div>
 
-      <form v-if="bill" @submit.prevent="submitPayment" enctype="multipart/form-data">
+      <form v-if="bill" @submit.prevent="submitPayment">
+
+        <!-- AMOUNT -->
         <div class="form-group">
           <label>Amount</label>
-          <input 
-            type="text" 
-            :value="bill.total ? '₱' + Number(bill.total).toFixed(2) : '₱0.00'" 
+          <input
+            type="text"
+            :value="formattedAmount"
             readonly
-          >
+          />
         </div>
 
+        <!-- MESSAGE -->
         <div class="form-group">
           <label>Message (optional)</label>
-          <textarea 
-            v-model="message" 
-            placeholder="Optional message..." 
-            rows="3" 
+          <textarea
+            v-model="message"
+            rows="3"
             :readonly="isPending"
           ></textarea>
         </div>
 
+        <!-- FILE UPLOAD -->
         <div class="form-group">
           <label>Screenshot</label>
-          <input 
-            type="file" 
-            @change="handleFile" 
-            accept="image/*" 
-            :disabled="isPending" 
-            :required="!isPending"
-          >
+
+          <input type="file" @click="console.log('FILE CLICKED')" @change="handleFile" />
+
+          <p v-if="file" class="file-name">
+            Selected: {{ file.name }}
+          </p>
         </div>
 
-        <button 
-          v-if="!isPending" 
-          type="submit" 
-          class="send-btn" 
+        <!-- SUBMIT -->
+        <button
+          v-if="!isPending"
+          type="submit"
+          class="send-btn"
           :disabled="loading"
         >
           {{ loading ? "Submitting..." : "Send Payment" }}
         </button>
 
-        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+        <p v-if="error" class="error-message">
+          {{ error }}
+        </p>
+
       </form>
 
+      <!-- CLOSE (PENDING) -->
       <div v-if="isPending" class="text-center">
-        <button class="send-btn" @click="$emit('close')">Close</button>
+        <button class="send-btn" @click="closeModal">
+          Close
+        </button>
       </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, watch, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import api from "@/customerApi"
 
 const props = defineProps({
@@ -71,48 +83,70 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "submitted"])
 
+// STATE
 const message = ref("")
-const screenshot = ref(null)
-const errorMessage = ref("")
+const file = ref(null)
 const loading = ref(false)
+const error = ref("")
 
+// COMPUTED
 const isPending = computed(() => props.bill?.status === "Pending")
 
+const formattedAmount = computed(() =>
+  props.bill?.total ? `₱${Number(props.bill.total).toFixed(2)}` : "₱0.00"
+)
+
+// RESET WHEN CLOSED
 watch(() => props.show, (val) => {
   if (!val) {
-    // Reset form when modal closes
     message.value = ""
-    screenshot.value = null
-    errorMessage.value = ""
+    file.value = null
+    error.value = ""
     loading.value = false
   }
 })
 
-const handleFile = (e) => {
-  screenshot.value = e.target.files[0]
+// CLOSE MODAL
+const closeModal = () => {
+  emit("close")
 }
 
+// FILE HANDLER (IMPORTANT)
+const handleFile = (e) => {
+  const selected = e.target.files?.[0]
+  if (selected) file.value = selected
+}
+
+// SUBMIT
 const submitPayment = async () => {
-  if (!props.bill) return (errorMessage.value = "No bill selected")
-  if (!screenshot.value) return (errorMessage.value = "Please upload a screenshot")
+  if (!props.bill) {
+    error.value = "No bill selected"
+    return
+  }
+
+  if (!file.value) {
+    error.value = "Please select a file"
+    return
+  }
 
   loading.value = true
-  errorMessage.value = ""
+  error.value = ""
 
   const formData = new FormData()
   formData.append("amount", props.bill.total)
   formData.append("message", message.value)
-  formData.append("screenshot", screenshot.value)
+  formData.append("screenshot", file.value)
 
   try {
     await api.post(`/customer/paybills/${props.bill.id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" }
     })
 
-    emit("submitted")  // Trigger SuccessPopup in parent
+    emit("submitted")
+
   } catch (err) {
     console.error(err)
-    errorMessage.value = "Failed to submit payment. Try again."
+    error.value = "Failed to submit payment"
   } finally {
     loading.value = false
   }
@@ -121,111 +155,70 @@ const submitPayment = async () => {
 
 <style scoped>
 .modal {
-  display: flex;
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
+  display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
-  padding:20px;
-  animation: fadeIn 0.25s ease;
+
+  z-index: 999999 !important;
 }
 
 .modal-content {
-  background:#fff;
-  width:100%;
-  max-width:480px;
-  border-radius:16px;
-  padding:30px 25px;
-  position:relative;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-  animation: slideUp 0.3s ease;
+  background: #fff;
+  width: 100%;
+  max-width: 480px;
+  padding: 30px;
+  border-radius: 16px;
+  position: relative;
+  pointer-events: auto; /* IMPORTANT FIX */
 }
 
 .close {
-  position:absolute;
-  top:15px;
-  right:20px;
-  font-size:24px;
-  font-weight:bold;
-  color:#555;
-  cursor:pointer;
-  transition: all 0.2s ease;
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 24px;
+  cursor: pointer;
 }
-.close:hover { color:#0f4c75; transform:scale(1.2); }
 
-.modal-header {
-  text-align:center;
-  margin-bottom:25px;
+.form-group {
+  margin-bottom: 18px;
 }
-.modal-header h3 { margin:10px 0 5px; color:#0f4c75; font-weight:600; }
-.modal-header p { margin-top:10px; size:14px; color:#666; }
 
-.form-group { margin-bottom:18px; }
-.form-group label {
-  display:block;
-  font-weight:600;
-  margin-bottom:6px;
-  color:#0f4c75;
-}
-.form-group input[type="text"],
-.form-group textarea,
-.form-group input[type="file"] {
-  width:100%;
-  padding:12px 14px;
-  border:1px solid #ccc;
-  border-radius:12px;
-  font-size:14px;
-  outline:none;
-  transition: all 0.2s ease;
-}
-.form-group input[type="text"]:focus,
-.form-group textarea:focus,
-.form-group input[type="file"]:focus {
-  border-color:#0f4c75;
-  box-shadow:0 0 8px rgba(15,76,117,0.3);
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
 }
 
 .send-btn {
-  background: linear-gradient(90deg, #007bff, #0f4c75);
-  color:#fff;
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:12px;
-  font-weight:600;
-  cursor:pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+  width: 100%;
+  padding: 14px;
+  background: #0f4c75;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
 }
-.send-btn:hover {
-  background: linear-gradient(90deg, #0d3a5a, #0f4c75);
-  transform:translateY(-2px);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.15);
-}
+
 .send-btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
-  opacity: 0.7;
 }
 
 .error-message {
-  color: #dc3545;
-  font-size: 14px;
+  color: red;
   text-align: center;
   margin-top: 10px;
 }
 
-.text-center {
-  text-align: center;
-}
-
-@keyframes slideUp {
-  0% { opacity:0; transform:translateY(-30px); }
-  100% { opacity:1; transform:translateY(0); }
-}
-@keyframes fadeIn {
-  0% { opacity:0; }
-  100% { opacity:1; }
+.file-name {
+  font-size: 13px;
+  color: #555;
+  margin-top: 5px;
 }
 </style>

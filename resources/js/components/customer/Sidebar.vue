@@ -70,6 +70,7 @@
   width: 250px;
   height: 100vh;
   background-color: #2872A1;
+  
   color: white;
   display: flex;
   flex-direction: column;

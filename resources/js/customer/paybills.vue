@@ -37,6 +37,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue"
+import { usePolling } from "@/polling"
 import api from "@/customerApi"
 import CustomerTable from "@/components/customer/table.vue"
 import PaymentModal from "@/components/customer/PaymentPopup.vue"
@@ -48,7 +49,7 @@ const showModal = ref(false)
 const selectedBill = ref(null)
 const showSuccess = ref(false)
 
-// ✅ Fetch bills
+// ✅ FETCH FUNCTION
 const fetchBills = async () => {
   try {
     const res = await api.get("/customer/paybills")
@@ -56,14 +57,19 @@ const fetchBills = async () => {
     bills.value = (res.data || []).filter(
       b => b.status === "Unpaid" || b.status === "Pending"
     )
+
   } catch (err) {
     console.error("Failed to load bills", err)
   }
 }
 
+// ✅ RUN ONCE IMMEDIATELY
 onMounted(fetchBills)
 
-// ✅ Columns handled by parent
+// ✅ START POLLING (EVERY 10 SECONDS)
+usePolling(fetchBills, 10000)
+
+// TABLE CONFIG
 const columns = [
   { label: "Bill ID", field: "id" },
   { label: "Month", field: "month" },
@@ -71,7 +77,6 @@ const columns = [
   { label: "Status", field: "status" }
 ]
 
-// ✅ Rows formatted by parent
 const rows = computed(() =>
   bills.value.map(b => ({
     id: b.id,
@@ -81,7 +86,7 @@ const rows = computed(() =>
   }))
 )
 
-// ✅ Actions
+// ACTIONS
 const openModal = (bill) => {
   selectedBill.value = bill
   showModal.value = true

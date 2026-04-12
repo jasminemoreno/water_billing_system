@@ -12,6 +12,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { usePolling } from '@/polling'
 import api from '@/customerApi.js'
 import CustomerTable from '@/components/customer/table.vue'
 import dayjs from 'dayjs'
@@ -32,7 +33,7 @@ const fetchBills = async () => {
   }
 }
 
-onMounted(fetchBills)
+usePolling(fetchBills, 10000)
 
 // ✅ Columns defined in parent (like admin)
 const columns = [
