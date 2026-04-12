@@ -1,13 +1,18 @@
 <template>
   <div class="login-page">
     <div class="login-container">
-      <aside class="brand">
-        <div class="logo-wrap">
-          <img src="@/assets/img/alipao.png" alt="Official Seal">
-        </div>
-        <h2>Barangay Alipao<br>Water Billing System</h2>
-      </aside>
 
+      <!-- LOGO -->
+      <div class="logo-wrap">
+        <img src="@/assets/img/alipao.png" alt="Official Seal">
+      </div>
+
+      <!-- TITLE -->
+      <h2 class="system-title">
+        Barangay Alipao <br> Water Billing System
+      </h2>
+
+      <!-- LOGIN CARD -->
       <section class="card">
         <h1>Customer Login</h1>
 
@@ -36,6 +41,7 @@
           </button>
         </form>
       </section>
+
     </div>
   </div>
 </template>
@@ -72,7 +78,7 @@ const login = async () => {
   }
 }
 </script>
-  
+
 <style scoped>
 
 /* =========================
@@ -83,80 +89,73 @@ const login = async () => {
   justify-content:center;
   align-items:center;
   min-height:100vh;
-  background: linear-gradient(270deg, #a18cd1, #fbc2eb, #d9afd9, #cda2f7);
-  background-size:600% 600%;
-  animation: gradientMove 12s ease infinite;
+
+  background:
+    
+    url('@/assets/img/water2.png');
+
+    background-size: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+
   font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-@keyframes gradientMove{
-  0%{background-position:0% 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0% 50%}
-}
-
 
 /* =========================
-   CONTAINER
+   CONTAINER (VERTICAL)
 ========================= */
 .login-container{
   display:flex;
-  width:900px;
-  max-width:95%;
-  border-radius:16px;
-  overflow:hidden;
-  backdrop-filter: blur(15px);
-  box-shadow:0 20px 60px rgba(0,0,0,0.25);
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  max-width:500px;
+  padding:20px;
 }
 
 
 /* =========================
-   BRAND SIDE
+   LOGO
 ========================= */
-.brand{
-  flex:1;
-  background:linear-gradient(180deg,#0d6efd,#0a58ca);
-  color:white;
-  padding:3rem 2rem;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  text-align:center;
-}
-
 .logo-wrap img{
-  width:110px;
-  margin-bottom:20px;
+  width:200px;
+  margin-bottom:15px;
   border-radius:50%;
   border:3px solid rgba(255,255,255,0.6);
   box-shadow:0 6px 20px rgba(0,0,0,0.3);
 }
 
-.brand h2{
+
+/* =========================
+   TITLE
+========================= */
+.system-title{
+  text-align:center;
+  color:white;
+  margin-bottom:25px;
+  font-size:1.5rem;
   font-weight:600;
-  line-height:1.4;
-  font-size:1.6rem;
 }
 
 
 /* =========================
-   LOGIN CARD
+   CARD
 ========================= */
 .card{
-  flex:1;
-  background:white;
-  padding:3rem 2.5rem;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
+  width:100%;
+  background: rgba(203, 221, 233, 0.75); /* 75% opacity background ONLY */
+  padding:2rem;
+  border-radius:16px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.25);
 }
 
 .card h1{
   text-align:center;
-  color:#0d6efd;
-  margin-bottom:2rem;
-  font-size:1.9rem;
+  color:#2872A1;
+  margin-bottom:1.5rem;
+  font-size:1.7rem;
   font-weight:700;
 }
 
@@ -165,7 +164,7 @@ const login = async () => {
    FORM
 ========================= */
 .form-row{
-  margin-bottom:1.6rem;
+  margin-bottom:1.4rem;
 }
 
 .form-row label{
@@ -175,15 +174,12 @@ const login = async () => {
   margin-bottom:6px;
 }
 
-
-/* INPUT STYLE */
-
 .form-row input{
   width:100%;
   padding:12px 14px;
   border-radius:10px;
   border:1px solid #d0d7de;
-  font-size:15px;
+  font-size:16px;
   transition:all .25s ease;
 }
 
@@ -191,22 +187,20 @@ const login = async () => {
   outline:none;
   border-color:#0d6efd;
   box-shadow:0 0 0 3px rgba(13,110,253,0.15);
-  transform:translateY(-1px);
 }
 
 
 /* =========================
    LINKS
 ========================= */
-
 .helper-line{
   text-align:right;
-  margin-bottom:1.4rem;
+  margin-bottom:1.2rem;
 }
 
 .helper-line a{
-  font-size:14px;
-  color:#0d6efd;
+  font-size:16px;
+  color:#2872A1;
   text-decoration:none;
 }
 
@@ -216,9 +210,8 @@ const login = async () => {
 
 
 /* =========================
-   ERROR MESSAGE
+   ERROR
 ========================= */
-
 .error-message{
   background:#fdeaea;
   border:1px solid #f5c6cb;
@@ -234,13 +227,12 @@ const login = async () => {
 /* =========================
    BUTTON
 ========================= */
-
 .btn-primary{
   width:100%;
   padding:12px;
   border:none;
   border-radius:10px;
-  background:linear-gradient(135deg,#0d6efd,#0056d2);
+  background:#2872A1;
   color:white;
   font-size:16px;
   font-weight:600;
@@ -253,35 +245,9 @@ const login = async () => {
   box-shadow:0 10px 20px rgba(13,110,253,0.35);
 }
 
-.btn-primary:active{
-  transform:scale(.97);
-}
-
 .btn-primary:disabled{
   background:#6c757d;
   cursor:not-allowed;
-  box-shadow:none;
-}
-
-
-/* =========================
-   RESPONSIVE
-========================= */
-
-@media(max-width:768px){
-
-.login-container{
-  flex-direction:column;
-}
-
-.brand{
-  padding:2rem;
-}
-
-.card{
-  padding:2rem;
-}
-
 }
 
 </style>
