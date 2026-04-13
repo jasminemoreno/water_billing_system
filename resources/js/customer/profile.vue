@@ -105,7 +105,7 @@
   .profile-box {
     width: 600px;
     margin: 50px auto;
-    background: #ffffff;
+    background: #CBDDE9;
     border-radius: 20px;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
     overflow: hidden;
@@ -114,7 +114,7 @@
   /* Profile Header */
   .profile-header {
     text-align: center;
-    background: linear-gradient(135deg, #6c63ff, #9a85ff);
+    background: #2872A1;
     padding: 60px 20px 40px 20px;
     color: white;
     position: relative;
@@ -125,8 +125,8 @@
     position: absolute;
     top: 20px;
     left: 20px;
-    background: rgba(255,255,255,0.85);
-    color: #6c63ff;
+    background: #FFFFFF;
+    color:  #5D89C2;
     font-weight: 600;
     padding: 10px 15px;
     border-radius: 12px;
@@ -172,7 +172,7 @@
   /* Profile Details */
   .profile-details {
     padding: 30px 40px;
-    background: #f5f7fa;
+    background: #CBDDE9;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -204,7 +204,7 @@
     display: block;
     width: calc(100% - 80px);
     margin: 25px auto 30px auto;
-    background: #6c63ff;
+    background: #2872A1;
     color: white;
     padding: 15px 0;
     border: none;

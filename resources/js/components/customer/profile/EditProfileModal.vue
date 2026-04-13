@@ -186,8 +186,8 @@
   .save-btn {
     width: 100%;
     padding: 14px 0;
-    background: linear-gradient(135deg,#6c63ff,#9a85ff);
-    color: white;
+    background: #2872A1;
+    color: #ffffff;
     font-weight: 600;
     border: none;
     border-radius: 15px;

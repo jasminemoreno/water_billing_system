@@ -171,9 +171,9 @@
     }
     
     .save-btn{
-    background:linear-gradient(135deg,#ff7e5f,#ff512f);
+    background:#2872A1;
     border:none;
-    color:white;
+    color:#FFFFFF;
     padding:12px;
     border-radius:8px;
     font-weight:600;

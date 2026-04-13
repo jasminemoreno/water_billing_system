@@ -13,7 +13,6 @@
         <div class="section account-section">
     
           <div class="section-header">
-            <div class="icon">📱</div>
             <h3>Account Information</h3>
           </div>
     
@@ -30,7 +29,7 @@
           </div>
     
           <button class="action-btn edit-btn" @click="showEdit = true">
-            ✏ Edit Account
+             Edit Account
           </button>
     
         </div>
@@ -40,7 +39,6 @@
         <div class="section security-section">
     
           <div class="section-header">
-            <div class="icon">🔐</div>
             <h3>Privacy & Security</h3>
           </div>
     
@@ -52,7 +50,7 @@
           </div>
     
           <button class="action-btn security-btn" @click="showPassword = true">
-            🔑 Change Password
+             Change Password
           </button>
     
         </div>
@@ -110,7 +108,7 @@
     
     .settings-page{
       min-height:100vh;
-      background:linear-gradient(135deg,#eef2f7,#d9e4f5);
+      background:#CBDDE9 ;
       display:flex;
       justify-content:center;
       align-items:flex-start;
@@ -148,8 +146,8 @@
     /* BACK BUTTON */
     
     .back-btn{
-      background:#6c757d;
-      color:white;
+      background:#FFFFFF;
+      color:#5D89C2;
       border:none;
       padding:8px 15px;
       border-radius:6px;
@@ -233,21 +231,21 @@
     }
     
     .edit-btn{
-      background:#4a90e2;
+      background:#2872A1;
       color:white;
     }
     
     .edit-btn:hover{
-      background:#357ad8;
+      background:#2872A1;
     }
     
     .security-btn{
-      background:#f39c12;
+      background:#2872A1;
       color:white;
     }
     
     .security-btn:hover{
-      background:#d68910;
+      background:#2872A1;
     }
     
     </style>

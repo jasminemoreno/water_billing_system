@@ -55,15 +55,15 @@
     margin: 50px auto;
     padding: 20px;
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #e0f0ff, #f9f9ff);
+    background: #CBDDE9;
     border-radius: 25px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.08);
   }
   
   /* Back Button */
   .back-btn {
-    background: linear-gradient(135deg,#6c63ff,#9a85ff);
-    color: white;
+    background:#FFFFFF ;
+    color: #5D89C2;
     padding: 10px 20px;
     border: none;
     border-radius: 12px;
