@@ -20,20 +20,27 @@
   const show = ref(false)
   
   watch(() => props.message, () => {
-    if (props.message) {
-      show.value = true
-      setTimeout(() => show.value = false, props.duration)
-    }
-  })
+  if (props.message) {
+    show.value = true
+    setTimeout(() => show.value = false, props.duration)
+  }
+}, { immediate: true })
   </script>
   
   <style scoped>
   .popup {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 2000;
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 2000;
+}
   .popup-content {
     background: #28a745;
     color: white;

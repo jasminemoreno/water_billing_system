@@ -54,7 +54,7 @@
     import { ref } from "vue"
     import api from "@/customerApi"
     
-    const emit = defineEmits(["close"])
+    const emit = defineEmits(["close", "updated"])
     
     const current = ref("")
     const newPass = ref("")
@@ -69,9 +69,11 @@
     })
     
     if(res.data.success){
-    alert("Password updated successfully")
+      emit("updated")   // 🔥 ADD THIS
     emit("close")
-    }
+  } else {
+    alert("Password update failed")
+  }
     
     }
     </script>

@@ -54,10 +54,13 @@
     })
     
     if(res.data.success){
-      alert("Account updated successfully")
+    
       emit("updated")
       emit("close")
     }
+    else {
+  alert("Failed to update account")
+  }
     
     }
     </script>

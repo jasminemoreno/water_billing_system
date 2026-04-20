@@ -63,13 +63,19 @@
         v-if="showEdit"
         :customer="customer"
         @close="showEdit = false"
-        @updated="loadCustomer"
+        @updated="handleUpdated"
       />
     
       <ChangePasswordModal
-        v-if="showPassword"
-        @close="showPassword = false"
-      />
+  v-if="showPassword"
+  @close="showPassword = false"
+  @updated="handlePasswordUpdated"
+/>
+      <SuccessPopup
+  :show="showSuccess"
+  :message="successMessage"
+  @close="showSuccess = false"
+/>
     
     </div>
     </template>
@@ -80,10 +86,13 @@
     
     import EditAccountModal from "@/components/customer/profile/EditAccountModal.vue"
     import ChangePasswordModal from "@/components/customer/profile/ChangePasswordModal.vue"
+    import SuccessPopup from "@/components/customer/SuccessPopup.vue"
     
     const customer = ref({})
     const showEdit = ref(false)
     const showPassword = ref(false)
+    const successMessage = ref("")
+    const showSuccess = ref(false)
     
     onMounted(() => {
       loadCustomer()
@@ -96,6 +105,25 @@
         customer.value = res.data.customer
       }
     }
+    function handleUpdated() {
+  loadCustomer()
+
+  successMessage.value = "Account updated successfully!"
+  showSuccess.value = true
+
+  setTimeout(() => {
+    showSuccess.value = false
+  }, 3000)
+}
+
+function handlePasswordUpdated() {
+  successMessage.value = "Password updated successfully!"
+  showSuccess.value = true
+
+  setTimeout(() => {
+    showSuccess.value = false
+  }, 3000)
+}
     
     function goBack(){
       window.history.back()
