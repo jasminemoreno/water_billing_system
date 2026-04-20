@@ -99,14 +99,13 @@ const columns = [
 // FORMAT BILLS FOR TABLE
 // ----------------------------
 const formattedBills = computed(() => {
-  const options = { year: 'numeric', month: 'long', day: 'numeric' }
   return bills.value.map(b => ({
     ...b,
     customer_name: b.customer?.customer_name || '',
     meter_no: b.customer?.meter_no || '',
-    billing_date: b.billing_date ? new Date(b.billing_date).toLocaleDateString('en-US', options) : '',
-    due_date: b.due_date ? new Date(b.due_date).toLocaleDateString('en-US', options) : '',
-    disconnection_date: b.disconnection_date ? new Date(b.disconnection_date).toLocaleDateString('en-US', options) : ''
+    billing_date: b.billing_date ? b.billing_date.split('T')[0] : '',
+    due_date: b.due_date ? b.due_date.split('T')[0] : '',
+    disconnection_date: b.disconnection_date ? b.disconnection_date.split('T')[0] : ''
   }))
 })
 
