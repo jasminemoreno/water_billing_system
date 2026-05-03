@@ -79,12 +79,15 @@ class CustomerHomeController extends Controller
 
         // get ALL bills of customer
         $bills = Bill::where('customer_id', $customer->id)->get();
-
         foreach ($bills as $bill) {
-            if ($bill->created_at) {
-                $month = (int) $bill->created_at->format('m');
-                $monthlyData[$month] += (float) $bill->consumption;
-            }
+
+            if (!$bill->billing_date)
+                continue;
+
+            $month = (int) date('m', strtotime($bill->billing_date));
+
+            $monthlyData[$month] += (float) $bill->consumption;
+
         }
 
         // build chart arrays
