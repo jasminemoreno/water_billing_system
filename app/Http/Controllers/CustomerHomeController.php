@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 
 class CustomerHomeController extends Controller
 {
+    /**
+     * MAIN DASHBOARD (optional use)
+     */
     public function dashboard(Request $request)
     {
-        $customer = $request->user(); // This should return the authenticated customer
+        $customer = $request->user();
 
         if (!$customer) {
             return response()->json([
@@ -19,15 +22,16 @@ class CustomerHomeController extends Controller
             ], 401);
         }
 
-        $currentBill = Bill::where('meter_no', $customer->meter_no)
-            ->latest('created_at')
+        // ✅ FIXED: use customer_id ONLY
+        $currentBill = Bill::where('customer_id', $customer->id)
+            ->latest()
             ->first();
 
         $lastPayment = null;
 
         if ($currentBill) {
             $lastPayment = $currentBill->payments()
-                ->latest('created_at')
+                ->latest()
                 ->first();
         }
 
@@ -38,38 +42,52 @@ class CustomerHomeController extends Controller
             'lastPayment' => $lastPayment
         ]);
     }
-    // JSON endpoint for AJAX updates
+
+    /**
+     * DASHBOARD DATA (USED BY MOBILE APP)
+     */
     public function dashboardData()
     {
         $customer = auth('customer-api')->user();
 
         if (!$customer) {
-            return response()->json(['message' => 'Unauthorized'], 401);
+            return response()->json([
+                'message' => 'Unauthorized'
+            ], 401);
         }
 
-        // ✅ FIX: use meter_no (same as dashboard())
-        $currentBill = Bill::where('meter_no', $customer->meter_no)
+        // ✅ CURRENT BILL
+        $currentBill = Bill::where('customer_id', $customer->id)
             ->latest()
             ->first();
 
+        // ✅ LAST PAYMENT
         $lastPayment = Payment::where('customer_id', $customer->id)
             ->latest()
             ->first();
 
-        // FIX chart data (also meter_no)
+        // ==========================
+        // 📊 WATER USAGE CHART DATA
+        // ==========================
+
         $monthlyData = [];
 
+        // initialize 12 months
         for ($i = 1; $i <= 12; $i++) {
             $monthlyData[$i] = 0;
         }
 
-        $bills = Bill::where('meter_no', $customer->meter_no)->get();
+        // get ALL bills of customer
+        $bills = Bill::where('customer_id', $customer->id)->get();
 
         foreach ($bills as $bill) {
-            $month = (int) $bill->created_at->format('m');
-            $monthlyData[$month] += (float) $bill->consumption;
+            if ($bill->created_at) {
+                $month = (int) $bill->created_at->format('m');
+                $monthlyData[$month] += (float) $bill->consumption;
+            }
         }
 
+        // build chart arrays
         $chartLabels = [];
         $chartData = [];
         $chartColors = [];
@@ -77,6 +95,7 @@ class CustomerHomeController extends Controller
         foreach ($monthlyData as $monthNum => $consumption) {
             $chartLabels[] = date('M', mktime(0, 0, 0, $monthNum, 1));
             $chartData[] = $consumption;
+
             $chartColors[] = $consumption > 0
                 ? 'rgba(54,162,235,0.6)'
                 : 'rgba(200,200,200,0.3)';
