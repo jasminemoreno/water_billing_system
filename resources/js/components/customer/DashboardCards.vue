@@ -1,4 +1,3 @@
-1️⃣ DashboardCards.vue
 <template>
   <div class="cards-row">
     <!-- Current Bill -->
