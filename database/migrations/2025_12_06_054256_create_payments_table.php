@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('payments', function (Blueprint $table) {
@@ -22,10 +21,10 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
 
             $table->enum('payment_method', ['Cash', 'GCash'])
-                  ->default('Cash');
+                ->default('Cash');
 
             $table->enum('status', ['Pending', 'Approved', 'Rejected', 'Verified'])
-                  ->default('Pending');
+                ->default('Pending');
 
             // nullable because only required when payment_method = GCash
             $table->string('gcash_screenshot')->nullable();
@@ -38,14 +37,14 @@ return new class extends Migration
 
             // constraints
             $table->foreign('customer_id')
-                  ->references('id')
-                  ->on('customers')
-                  ->onDelete('cascade');
+                ->references('id')
+                ->on('customers')
+                ->onDelete('cascade');
 
             $table->foreign('bill_id')
-                  ->references('id')
-                  ->on('bills')
-                  ->onDelete('cascade');
+                ->references('id')
+                ->on('bills')
+                ->onDelete('cascade');
 
         });
     }

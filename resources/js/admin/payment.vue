@@ -18,15 +18,16 @@
 
     <!-- FORM (VIEW ONLY / NO EDIT MODE HERE) -->
     <PaymentForm
-      v-if="popupVisible"
-      :mode="popupMode"
-      :payment="currentPayment"
-      :customers="customers"
-      :bills="bills"
-      @close="popupVisible = false"
-      @verify="verifyPayment"
-      @reject="rejectPayment"
-    />
+  v-if="popupVisible"
+  :mode="popupMode"
+  :payment="currentPayment"
+  :customers="customers"
+  :bills="bills"
+  @close="popupVisible = false"
+  @saved="onPaymentSaved"
+  @verify="verifyPayment"
+  @reject="rejectPayment"
+/>
 
     <!-- DELETE CONFIRM POPUP -->
     <div v-if="confirmDeletePopup" class="popup-overlay">
@@ -165,8 +166,25 @@ function cancelDelete() {
 
 // OPTIONAL (if needed)
 function openAdd() {
-  popupMode.value = "view"
+  popupMode.value = "add"
+  popupVisible.value = true
+
+  Object.assign(currentPayment, {
+    id: null,
+    customer_id: null,
+    bill_id: null,
+    meter_no: "",
+    amount: 0,
+    payment_method: "Cash",
+    status: "Pending",
+  })
+}
+function onPaymentSaved(message) {
+  successMessage.value = message
+  showSuccess.value = true
   popupVisible.value = false
+
+  loadPayments() // refresh table
 }
 
 // VERIFY / REJECT
