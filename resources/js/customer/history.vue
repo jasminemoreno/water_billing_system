@@ -7,6 +7,8 @@
       :columns="columns"
       :rows="rows"
       :hasPay="false"
+      :hasDownload="true"
+      @download="downloadReceipt"
     />
   </div>
 </template>
@@ -19,22 +21,23 @@ import dayjs from "dayjs"
 
 const payments = ref([])
 
-// ✅ Fetch data
+// ✅ FIXED FETCH
 const fetchPayments = async () => {
   try {
     const res = await customerApi.get("/customer/history")
 
-    payments.value = (res.data.payments || []).filter(
-      p => p.status === "Verified"
-    )
+    // IMPORTANT FIX: use res.data.payments
+    payments.value = res.data.payments || []
+
   } catch (error) {
     console.error("Error fetching payment history:", error)
+    payments.value = []
   }
 }
 
 onMounted(fetchPayments)
 
-// ✅ Columns (parent handles it)
+// columns unchanged
 const columns = [
   { label: "Bill ID", field: "bill_id" },
   { label: "Month", field: "month" },
@@ -43,18 +46,45 @@ const columns = [
   { label: "Status", field: "status" }
 ]
 
-// ✅ Rows (parent formats data)
+// rows unchanged (just safe)
 const rows = computed(() =>
   payments.value.map(p => ({
+    id: p.id,
     bill_id: p.bill?.id ?? "-",
     month: p.bill?.billing_date
       ? dayjs(p.bill.billing_date).format("MMMM YYYY")
       : "-",
-    amount: "₱" + Number(p.amount).toFixed(2),
-    date_paid: dayjs(p.created_at).format("MMM DD, YYYY"),
-    status: p.status
+    amount: "₱" + Number(p.amount || 0).toFixed(2),
+    date_paid: p.created_at
+      ? dayjs(p.created_at).format("MMM DD, YYYY")
+      : "-",
+    status: p.status ?? "-"
   }))
 )
+
+// download unchanged
+const downloadReceipt = async (payment) => {
+  try {
+    const res = await customerApi.get(
+      `/customer/payment/${payment.id}/receipt`,
+      { responseType: "blob" }
+    )
+
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `receipt-${payment.id}.pdf`
+
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+
+  } catch (error) {
+    console.error(error)
+    alert("Failed to download receipt")
+  }
+}
 </script>
 
 <style scoped>

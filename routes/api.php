@@ -136,6 +136,7 @@ Route::middleware('auth:customer-api')->prefix('customer')->group(function () {
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
 
     Route::get('/history', [CustomerHistoryController::class, 'history']);
+    Route::get('/payment/{id}/receipt', [CustomerPaymentController::class, 'downloadReceipt']);
 
     Route::get('/profile', [CustomerProfileController::class, 'show']);
     Route::post('/profile/update', [CustomerProfileController::class, 'update']);

@@ -12,7 +12,7 @@ class CustomerBillController extends Controller
     // ===============================
     // PAYBILL PAGE → ONLY UNPAID / PENDING
     // ===============================
-    
+
     // ===============================
     // MYBILL PAGE → ALL BILLS
     // ===============================
@@ -25,9 +25,9 @@ class CustomerBillController extends Controller
         }
 
         $bills = Bill::withTrashed() // ⭐ VERY IMPORTANT
-        ->where('customer_id',$customer->id)
-        ->orderByDesc('id')
-        ->get();
+            ->where('customer_id', $customer->id)
+            ->orderByDesc('id')
+            ->get();
 
         return response()->json($bills);
     }
